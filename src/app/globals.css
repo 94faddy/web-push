@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+:root {
+  /* Primary Green Theme */
+  --primary: #22C55E;
+  --primary-dark: #16A34A;
+  --primary-light: #4ADE80;
+  --primary-50: #F0FDF4;
+  --primary-100: #DCFCE7;
+  
+  /* Neutral Colors */
+  --bg-main: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --border: #E2E8F0;
+  
+  /* Status Colors */
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Button styles */
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+/* Sidebar active state */
+.nav-active {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* Stats card icon background */
+.icon-bg {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-bg-primary {
+  background-color: var(--primary-100);
+  color: var(--primary);
+}
+
+.icon-bg-blue {
+  background-color: #DBEAFE;
+  color: #3B82F6;
+}
+
+.icon-bg-orange {
+  background-color: #FEF3C7;
+  color: #F59E0B;
+}
+
+.icon-bg-purple {
+  background-color: #F3E8FF;
+  color: #A855F7;
+}
