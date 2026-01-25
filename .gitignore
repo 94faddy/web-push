@@ -2,5 +2,7 @@
 /out/
 /build
 /node_modules
+/public/*
+!/public/sw.js
 .env
 package-lock.json
