@@ -3,6 +3,7 @@
 /build
 /node_modules
 /public/*
+!/public/*svg
 !/public/sw.js
 .env
 package-lock.json
