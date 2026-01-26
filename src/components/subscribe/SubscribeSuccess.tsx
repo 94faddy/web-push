@@ -76,42 +76,6 @@ export default function SubscribeSuccess({ justSubscribed }: SubscribeSuccessPro
         </p>
       </div>
 
-      {/* Features */}
-      <div style={{ 
-        marginTop: '20px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '12px'
-      }}>
-        <div style={{ 
-          background: '#f9fafb', 
-          borderRadius: '10px', 
-          padding: '12px',
-          textAlign: 'center'
-        }}>
-          <span style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}>📰</span>
-          <span style={{ fontSize: '11px', color: '#6b7280' }}>ข่าวสาร</span>
-        </div>
-        <div style={{ 
-          background: '#f9fafb', 
-          borderRadius: '10px', 
-          padding: '12px',
-          textAlign: 'center'
-        }}>
-          <span style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}>🎁</span>
-          <span style={{ fontSize: '11px', color: '#6b7280' }}>โปรโมชั่น</span>
-        </div>
-        <div style={{ 
-          background: '#f9fafb', 
-          borderRadius: '10px', 
-          padding: '12px',
-          textAlign: 'center'
-        }}>
-          <span style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}>⚡</span>
-          <span style={{ fontSize: '11px', color: '#6b7280' }}>แจ้งเตือนทันที</span>
-        </div>
-      </div>
-
       {/* Animation */}
       <style jsx global>{`
         @keyframes successBounce {

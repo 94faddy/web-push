@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   
   // Skip all static files
   if (
@@ -28,6 +28,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
+  // Allow /api/page-settings with token (for public subscribe page)
+  if (pathname === '/api/page-settings' && searchParams.has('token')) {
+    return NextResponse.next();
+  }
+  
   // Check session for protected routes
   const sessionCookie = request.cookies.get('admin_session');
   
@@ -46,9 +51,6 @@ export function middleware(request: NextRequest) {
     }
     return NextResponse.next();
   }
-  
-  // Root path - show 404 (no redirect to login)
-  // This hides the admin login path from public
   
   return NextResponse.next();
 }

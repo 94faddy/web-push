@@ -14,6 +14,46 @@ import {
   SubscribeForm
 } from '@/components/subscribe';
 
+interface PageSettings {
+  button_hue: number;
+  button_saturation: number;
+  button_lightness: number;
+  bg_type: 'solid' | 'gradient' | 'image';
+  bg_hue: number;
+  bg_saturation: number;
+  bg_lightness: number;
+  bg_gradient_hue2: number;
+  bg_gradient_saturation2: number;
+  bg_gradient_lightness2: number;
+  bg_gradient_angle: number;
+  bg_image_url?: string;
+  bg_image_overlay: boolean;
+  bg_image_overlay_opacity: number;
+  logo_url?: string;
+  logo_width: number;
+  page_title: string;
+  page_subtitle: string;
+}
+
+const defaultSettings: PageSettings = {
+  button_hue: 142,
+  button_saturation: 71,
+  button_lightness: 45,
+  bg_type: 'gradient',
+  bg_hue: 142,
+  bg_saturation: 71,
+  bg_lightness: 45,
+  bg_gradient_hue2: 142,
+  bg_gradient_saturation2: 76,
+  bg_gradient_lightness2: 36,
+  bg_gradient_angle: 135,
+  bg_image_overlay: true,
+  bg_image_overlay_opacity: 40,
+  logo_width: 120,
+  page_title: 'Web Push Notifications',
+  page_subtitle: 'รับการแจ้งเตือนข่าวสารล่าสุดจากเรา'
+};
+
 export default function SubscribePage() {
   const params = useParams();
   const token = params.token as string;
@@ -31,6 +71,49 @@ export default function SubscribePage() {
   const [mounted, setMounted] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
   const [justSubscribed, setJustSubscribed] = useState(false);
+  const [settings, setSettings] = useState<PageSettings>(defaultSettings);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  // Fetch page settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!token || token.trim() === '') {
+        setSettingsLoaded(true);
+        return;
+      }
+
+      try {
+        const timestamp = Date.now();
+        const response = await fetch(`/api/page-settings?token=${encodeURIComponent(token)}&_t=${timestamp}`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        if (!response.ok) {
+          setSettingsLoaded(true);
+          return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          setSettings(prev => ({ ...prev, ...data.data }));
+        }
+      } catch {
+        // Silent fail - use default settings
+      } finally {
+        setSettingsLoaded(true);
+      }
+    };
+
+    if (token && token.trim() !== '') {
+      fetchSettings();
+    }
+  }, [token]);
 
   useEffect(() => {
     setMounted(true);
@@ -56,10 +139,10 @@ export default function SubscribePage() {
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
         text: error,
-        confirmButtonColor: '#22C55E'
+        confirmButtonColor: `hsl(${settings.button_hue}, ${settings.button_saturation}%, ${settings.button_lightness}%)`
       });
     }
-  }, [error]);
+  }, [error, settings]);
 
   // Handle Subscribe
   const handleSubscribe = async () => {
@@ -76,15 +159,74 @@ export default function SubscribePage() {
     }
   };
 
-  if (!mounted) {
+  // Generate background style
+  const getBackgroundStyle = (): React.CSSProperties => {
+    const { bg_type, bg_hue, bg_saturation, bg_lightness, 
+            bg_gradient_hue2, bg_gradient_saturation2, bg_gradient_lightness2, 
+            bg_gradient_angle, bg_image_url, bg_image_overlay, bg_image_overlay_opacity } = settings;
+
+    if (bg_type === 'image' && bg_image_url) {
+      if (bg_image_overlay) {
+        return {
+          backgroundImage: `linear-gradient(rgba(0,0,0,${bg_image_overlay_opacity / 100}), rgba(0,0,0,${bg_image_overlay_opacity / 100})), url(${bg_image_url})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        };
+      }
+      return {
+        backgroundImage: `url(${bg_image_url})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    }
+
+    if (bg_type === 'gradient') {
+      const color1 = `hsl(${bg_hue}, ${bg_saturation}%, ${bg_lightness}%)`;
+      const color2 = `hsl(${bg_gradient_hue2}, ${bg_gradient_saturation2}%, ${bg_gradient_lightness2}%)`;
+      return {
+        background: `linear-gradient(${bg_gradient_angle}deg, ${color1}, ${color2})`
+      };
+    }
+
+    // Solid
+    return {
+      background: `hsl(${bg_hue}, ${bg_saturation}%, ${bg_lightness}%)`
+    };
+  };
+
+  // Loading screen - ใช้สี neutral เพื่อไม่ให้ flash สีเขียว
+  if (!mounted || !settingsLoaded) {
     return (
-      <main style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#22C55E,#16A34A)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'white', fontSize: '18px' }}>กำลังโหลด...</div>
+      <main style={{ 
+        minHeight: '100vh', 
+        background: '#f3f4f6',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <div style={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #e5e7eb',
+            borderTopColor: '#3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
       </main>
     );
   }
 
-  // Render Content based on state
+  // Render Content based on state - ใช้ components เดิมทั้งหมด ไม่เปลี่ยน logic
   const renderContent = () => {
     // iOS - ต้องเปิดใน Safari (browser ที่ไม่ใช่ Safari หรือ Chrome)
     if (browserInfo.needsSafari) {
@@ -144,16 +286,32 @@ export default function SubscribePage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#22C55E,#16A34A)', padding: '40px 16px' }}>
+    <main style={{ minHeight: '100vh', ...getBackgroundStyle(), padding: '40px 16px' }}>
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
         
+        {/* Logo - แสดงตรงกลาง */}
+        {settings.logo_url && (
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <img 
+              src={settings.logo_url} 
+              alt="Logo" 
+              style={{ 
+                width: settings.logo_width, 
+                height: 'auto',
+                maxWidth: '100%',
+                display: 'inline-block'
+              }} 
+            />
+          </div>
+        )}
+
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'white', marginBottom: '8px' }}>
-            Web Push Notifications
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'white', marginBottom: '8px', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+            {settings.page_title}
           </h1>
-          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.8)' }}>
-            รับการแจ้งเตือนข่าวสารล่าสุดจากเรา
+          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.9)', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
+            {settings.page_subtitle}
           </p>
         </div>
 

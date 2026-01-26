@@ -174,3 +174,65 @@ export interface TemplateInput {
   image?: string;
   url?: string;
 }
+
+// Page Settings types
+export interface PageSettings {
+  id: number;
+  admin_id: number;
+  
+  // Button Colors (HSL)
+  button_hue: number;
+  button_saturation: number;
+  button_lightness: number;
+  
+  // Background Settings
+  bg_type: 'solid' | 'gradient' | 'image';
+  
+  // Solid/Gradient colors (HSL)
+  bg_hue: number;
+  bg_saturation: number;
+  bg_lightness: number;
+  
+  // Gradient settings
+  bg_gradient_hue2: number;
+  bg_gradient_saturation2: number;
+  bg_gradient_lightness2: number;
+  bg_gradient_angle: number;
+  
+  // Background Image
+  bg_image_url?: string;
+  bg_image_overlay: boolean;
+  bg_image_overlay_opacity: number;
+  
+  // Logo
+  logo_url?: string;
+  logo_width: number;
+  
+  // Page Text
+  page_title: string;
+  page_subtitle: string;
+  
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface PageSettingsInput {
+  button_hue?: number;
+  button_saturation?: number;
+  button_lightness?: number;
+  bg_type?: 'solid' | 'gradient' | 'image';
+  bg_hue?: number;
+  bg_saturation?: number;
+  bg_lightness?: number;
+  bg_gradient_hue2?: number;
+  bg_gradient_saturation2?: number;
+  bg_gradient_lightness2?: number;
+  bg_gradient_angle?: number;
+  bg_image_url?: string;
+  bg_image_overlay?: boolean;
+  bg_image_overlay_opacity?: number;
+  logo_url?: string;
+  logo_width?: number;
+  page_title?: string;
+  page_subtitle?: string;
+}
