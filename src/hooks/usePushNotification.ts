@@ -3,14 +3,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { VAPID_PUBLIC_KEY } from '@/lib/config';
 
-interface BrowserInfo {
+export interface BrowserInfo {
   name: string;
+  displayName: string;
   isSupported: boolean;
   isInApp: boolean;
+  isUnknown: boolean;
+  platform: 'android' | 'ios' | 'desktop';
   message?: string;
   isBrave?: boolean;
   isEdge?: boolean;
-  isIOSBrowser?: boolean; // iOS browser ที่รองรับ Add to Home Screen
+  isIOSSafari?: boolean;
+  isIOSChrome?: boolean;
+  needsSafari?: boolean;
+  inAppName?: string;
 }
 
 interface UsePushNotificationReturn {
@@ -27,7 +33,6 @@ interface UsePushNotificationReturn {
   browserInfo: BrowserInfo;
 }
 
-// Helper: Promise with timeout
 function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
   const timeout = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error(errorMessage)), ms);
@@ -46,10 +51,8 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return outputArray.buffer;
 }
 
-// ตรวจสอบว่าเป็น Brave browser หรือไม่
 async function checkIsBrave(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  
   const nav = navigator as Navigator & { brave?: { isBrave?: () => Promise<boolean> } };
   if (nav.brave && typeof nav.brave.isBrave === 'function') {
     try {
@@ -58,216 +61,531 @@ async function checkIsBrave(): Promise<boolean> {
       return true;
     }
   }
-  
-  const ua = navigator.userAgent.toLowerCase();
-  if (ua.includes('brave')) {
-    return true;
-  }
-  
   return false;
 }
 
-// ตรวจสอบว่าเป็น iOS หรือไม่
+function getPlatform(): 'android' | 'ios' | 'desktop' {
+  if (typeof window === 'undefined') return 'desktop';
+  const ua = navigator.userAgent.toLowerCase();
+  if (/android/.test(ua)) return 'android';
+  if (/iphone|ipad|ipod/.test(ua)) return 'ios';
+  return 'desktop';
+}
+
 function checkIsIOS(): boolean {
   if (typeof window === 'undefined') return false;
   const ua = window.navigator.userAgent.toLowerCase();
   return /iphone|ipad|ipod/.test(ua);
 }
 
-// ตรวจสอบ Browser อย่างละเอียด
+// ตรวจสอบว่าเป็น Standalone mode (PWA) หรือไม่
+function isStandaloneMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  const navStandalone = (window.navigator as Navigator & { standalone?: boolean }).standalone;
+  if (navStandalone === true) return true;
+  if (window.matchMedia('(display-mode: standalone)').matches) return true;
+  if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+  if (document.referrer.includes('android-app://')) return true;
+  return false;
+}
+
+// ตรวจสอบ In-App Browser จาก User Agent (เฉพาะ patterns ที่ชัดเจน)
+function detectInAppByUA(ua: string): string | null {
+  // ถ้า URL มี openExternalBrowser=1 → เปิดจาก Safari/Chrome แล้ว ไม่ใช่ in-app
+  if (typeof window !== 'undefined' && window.location.search.includes('openExternalBrowser=1')) {
+    return null;
+  }
+  
+  const uaLower = ua.toLowerCase();
+  
+  // รายการ In-App patterns ที่มีใน UA ชัดเจน
+  const patterns: { test: (ua: string) => boolean; name: string }[] = [
+    // LINE - มี "Line/" ใน UA
+    { test: (ua) => /line\/[\d.]+/.test(ua) || ua.includes(' line ') || ua.includes('liff'), name: 'LINE' },
+    
+    // Facebook - มี FBAV หรือ FBAN ใน UA
+    { test: (ua) => ua.includes('fbav/') || ua.includes('fban/') || ua.includes('fb_iab') || ua.includes('[fban') || ua.includes('[fbav'), name: 'Facebook' },
+    
+    // Messenger - มี messenger ใน UA
+    { test: (ua) => ua.includes('messenger/') || /\[fb.*messenger\]/.test(ua), name: 'Messenger' },
+    
+    // Instagram - มี Instagram ใน UA
+    { test: (ua) => ua.includes('instagram'), name: 'Instagram' },
+    
+    // TikTok
+    { test: (ua) => ua.includes('tiktok') || ua.includes('bytedance') || ua.includes('musical_ly'), name: 'TikTok' },
+    
+    // Twitter/X
+    { test: (ua) => ua.includes('twitter/') || ua.includes('twitterandroid'), name: 'Twitter/X' },
+    
+    // WhatsApp
+    { test: (ua) => ua.includes('whatsapp/'), name: 'WhatsApp' },
+    
+    // WeChat
+    { test: (ua) => ua.includes('micromessenger/') || ua.includes('wechat'), name: 'WeChat' },
+    
+    // Snapchat
+    { test: (ua) => ua.includes('snapchat'), name: 'Snapchat' },
+    
+    // LinkedIn
+    { test: (ua) => ua.includes('linkedin'), name: 'LinkedIn' },
+    
+    // Pinterest
+    { test: (ua) => ua.includes('pinterest/'), name: 'Pinterest' },
+    
+    // Discord
+    { test: (ua) => ua.includes('discord/'), name: 'Discord' },
+    
+    // Slack
+    { test: (ua) => ua.includes('slack/'), name: 'Slack' },
+    
+    // Zalo
+    { test: (ua) => ua.includes('zalo/'), name: 'Zalo' },
+    
+    // KakaoTalk
+    { test: (ua) => ua.includes('kakaotalk'), name: 'KakaoTalk' },
+    
+    // Viber
+    { test: (ua) => ua.includes('viber/'), name: 'Viber' },
+    
+    // Shopping Apps
+    { test: (ua) => ua.includes('shopee'), name: 'Shopee' },
+    { test: (ua) => ua.includes('lazada'), name: 'Lazada' },
+    { test: (ua) => ua.includes('grab/'), name: 'Grab' },
+    
+    // Thai Banking
+    { test: (ua) => ua.includes('kplus') || ua.includes('k plus'), name: 'K PLUS' },
+    { test: (ua) => ua.includes('scbeasy'), name: 'SCB Easy' },
+    { test: (ua) => ua.includes('truemoney'), name: 'TrueMoney' },
+  ];
+  
+  for (const { test, name } of patterns) {
+    if (test(uaLower)) {
+      return name;
+    }
+  }
+  
+  return null;
+}
+
+// ตรวจสอบ Telegram แยกต่างหาก (เพราะ UA อาจไม่ชัดเจน)
+function detectTelegram(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  // ถ้า URL มี openExternalBrowser=1 → เปิดจาก Safari/Chrome แล้ว ไม่ใช่ in-app
+  if (window.location.search.includes('openExternalBrowser=1')) return false;
+  
+  // ตรวจสอบจาก window object - เฉพาะ TelegramWebviewProxy (ที่มีเฉพาะใน WebView)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const win = window as any;
+  if (win.TelegramWebviewProxy || win.TelegramWebview) return true;
+  
+  // ตรวจสอบจาก UA - ต้องมี pattern ชัดเจน
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('telegram') || ua.includes('tgweb')) return true;
+  
+  return false;
+}
+
+// ตรวจสอบว่าเป็น Android WebView หรือไม่
+function isAndroidWebView(ua: string): boolean {
+  const uaLower = ua.toLowerCase();
+  if (uaLower.includes('; wv)') || uaLower.includes(';wv)') || uaLower.includes(' wv)')) return true;
+  if (uaLower.includes('android') && uaLower.includes('chrome') && !uaLower.includes('safari')) return true;
+  return false;
+}
+
+// ตรวจสอบว่าเป็น Safari แท้บน iOS หรือไม่
+// Safari แท้จะมี Safari/xxx และ Version/xxx และไม่มี in-app patterns
+function isRealIOSSafari(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (!checkIsIOS()) return false;
+  
+  const ua = navigator.userAgent;
+  const uaLower = ua.toLowerCase();
+  
+  // ตรวจสอบ Telegram ก่อน (window object)
+  if (detectTelegram()) return false;
+  
+  // ตรวจสอบ in-app browser จาก UA
+  if (detectInAppByUA(ua)) return false;
+  
+  // Safari แท้จะมี "Safari/" และ "Version/" ใน UA
+  const hasSafari = /safari\/[\d.]+/.test(uaLower);
+  const hasVersion = /version\/[\d.]+/.test(uaLower);
+  
+  // ต้องไม่ใช่ browser อื่นบน iOS
+  const noCrios = !uaLower.includes('crios');     // Chrome iOS
+  const noFxios = !uaLower.includes('fxios');     // Firefox iOS
+  const noEdgios = !uaLower.includes('edgios');   // Edge iOS
+  const noOpios = !uaLower.includes('opios');     // Opera iOS
+  const noOpt = !uaLower.includes('opt/');        // Opera Touch
+  const noGsa = !uaLower.includes('gsa/');        // Google Search App
+  const noBrave = !uaLower.includes('brave');     // Brave iOS
+  const noDuckDuckGo = !uaLower.includes('duckduckgo');
+  const noFocus = !uaLower.includes('focus/');    // Firefox Focus
+  
+  // Safari แท้ต้องมีทั้ง Safari และ Version และไม่ใช่ browser อื่น
+  const isSafariUA = hasSafari && hasVersion && 
+                      noCrios && noFxios && noEdgios && noOpios && 
+                      noOpt && noGsa && noBrave && noDuckDuckGo && noFocus;
+  
+  return isSafariUA;
+}
+
+// ตรวจสอบว่าเป็น Chrome บน iOS หรือไม่
+function isIOSChrome(ua: string): boolean {
+  const uaLower = ua.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(uaLower);
+  if (!isIOS) return false;
+  
+  // ต้องไม่ใช่ in-app browser
+  if (detectInAppByUA(ua)) return false;
+  if (detectTelegram()) return false;
+  
+  return uaLower.includes('crios');
+}
+
+// ตรวจสอบว่าเป็น Chrome แท้บน Android หรือไม่
+function isRealAndroidChrome(ua: string): boolean {
+  const uaLower = ua.toLowerCase();
+  
+  if (!uaLower.includes('android')) return false;
+  if (detectInAppByUA(ua)) return false;
+  if (isAndroidWebView(ua)) return false;
+  
+  const hasChrome = /chrome\/[\d.]+/.test(uaLower);
+  const hasSafari = uaLower.includes('safari/');
+  const hasMobile = uaLower.includes('mobile');
+  
+  // ต้องไม่ใช่ browser อื่น
+  const noEdge = !uaLower.includes('edg/') && !uaLower.includes('edge/');
+  const noOpera = !uaLower.includes('opr/') && !uaLower.includes('opera');
+  const noSamsung = !uaLower.includes('samsungbrowser');
+  const noFirefox = !uaLower.includes('firefox');
+  
+  // ต้องไม่ใช่ browser ที่ไม่รองรับ Push Notification
+  const noVivo = !uaLower.includes('vivobrowser') && !uaLower.includes('vivo browser');
+  const noOppo = !uaLower.includes('heytapbrowser') && !uaLower.includes('oppobrowser') && !uaLower.includes('coloros');
+  const noMi = !uaLower.includes('miuibrowser') && !uaLower.includes('mibrowser');
+  const noHuawei = !uaLower.includes('huaweibrowser') && !uaLower.includes('hmscore');
+  const noUC = !uaLower.includes('ucbrowser') && !uaLower.includes('uc browser');
+  const noQQ = !uaLower.includes('mqqbrowser') && !uaLower.includes('qq/') && !uaLower.includes('qqbrowser');
+  const noBaidu = !uaLower.includes('baidubrowser') && !uaLower.includes('baidu');
+  const noDuckDuckGo = !uaLower.includes('duckduckgo');
+  const noRealme = !uaLower.includes('realmebrowser');
+  const noOnePlus = !uaLower.includes('oneplusbrowser');
+  
+  return hasChrome && hasSafari && hasMobile && 
+         noEdge && noOpera && noSamsung && noFirefox &&
+         noVivo && noOppo && noMi && noHuawei && noUC && noQQ && noBaidu && noDuckDuckGo && noRealme && noOnePlus;
+}
+
 async function detectBrowser(): Promise<BrowserInfo> {
   if (typeof window === 'undefined') {
-    return { name: 'unknown', isSupported: false, isInApp: false };
-  }
-  
-  const ua = navigator.userAgent.toLowerCase();
-  const isIOS = checkIsIOS();
-  
-  // ตรวจสอบ In-app Browser (ไม่รองรับ Push)
-  if (ua.includes('line')) {
-    return { name: 'LINE', isSupported: false, isInApp: true, message: 'กรุณาเปิดใน Chrome, Brave หรือ Safari แทน กดที่ ⋮ แล้วเลือก "เปิดใน Browser"' };
-  }
-  if (ua.includes('fbav') || ua.includes('fban') || ua.includes('fb_iab')) {
-    return { name: 'Facebook', isSupported: false, isInApp: true, message: 'กรุณาเปิดใน Chrome, Brave หรือ Safari แทน กดที่ ⋮ แล้วเลือก "เปิดใน Browser"' };
-  }
-  if (ua.includes('instagram')) {
-    return { name: 'Instagram', isSupported: false, isInApp: true, message: 'กรุณาเปิดใน Chrome, Brave หรือ Safari แทน กดที่ ⋮ แล้วเลือก "เปิดใน Browser"' };
-  }
-  if (ua.includes('twitter') || ua.includes('twitterandroid')) {
-    return { name: 'Twitter/X', isSupported: false, isInApp: true, message: 'กรุณาเปิดใน Chrome, Brave หรือ Safari แทน' };
-  }
-  if (ua.includes('tiktok')) {
-    return { name: 'TikTok', isSupported: false, isInApp: true, message: 'กรุณาเปิดใน Chrome, Brave หรือ Safari แทน' };
-  }
-  if (ua.includes('snapchat')) {
-    return { name: 'Snapchat', isSupported: false, isInApp: true, message: 'กรุณาเปิดใน Chrome, Brave หรือ Safari แทน' };
-  }
-  if (ua.includes('wv') && ua.includes('android')) {
-    return { name: 'WebView', isSupported: false, isInApp: true, message: 'กรุณาเปิดใน Chrome หรือ Brave แทน' };
-  }
-  
-  // ตรวจสอบ Browser ที่ไม่รองรับ Push (Android)
-  if (!isIOS) {
-    if (ua.includes('ucbrowser') || ua.includes('ucweb')) {
-      return { name: 'UC Browser', isSupported: false, isInApp: false, message: 'UC Browser ไม่รองรับ Push Notification กรุณาใช้ Chrome, Brave หรือ Firefox แทน' };
-    }
-    if (ua.includes('miuibrowser')) {
-      return { name: 'Mi Browser', isSupported: false, isInApp: false, message: 'Mi Browser ไม่รองรับ Push Notification กรุณาใช้ Chrome หรือ Brave แทน' };
-    }
-    if (ua.includes('vivobrowser')) {
-      return { name: 'Vivo Browser', isSupported: false, isInApp: false, message: 'Vivo Browser ไม่รองรับ Push Notification กรุณาใช้ Chrome หรือ Brave แทน' };
-    }
-    if (ua.includes('oppobrowser')) {
-      return { name: 'Oppo Browser', isSupported: false, isInApp: false, message: 'Oppo Browser ไม่รองรับ Push Notification กรุณาใช้ Chrome หรือ Brave แทน' };
-    }
-    if (ua.includes('huaweibrowser')) {
-      return { name: 'Huawei Browser', isSupported: false, isInApp: false, message: 'Huawei Browser อาจไม่รองรับ Push Notification กรุณาใช้ Chrome หรือ Brave แทน' };
-    }
-  }
-  
-  // *** iOS Browser - ทุก browser รองรับ Add to Home Screen ***
-  if (isIOS) {
-    // Chrome บน iOS
-    if (ua.includes('crios')) {
-      return { 
-        name: 'Chrome (iOS)', 
-        isSupported: true, 
-        isInApp: false, 
-        isIOSBrowser: true,
-        message: 'กด Share แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"' 
-      };
-    }
-    // Firefox บน iOS
-    if (ua.includes('fxios')) {
-      return { 
-        name: 'Firefox (iOS)', 
-        isSupported: true, 
-        isInApp: false, 
-        isIOSBrowser: true,
-        message: 'กด Share แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"' 
-      };
-    }
-    // Edge บน iOS
-    if (ua.includes('edgios')) {
-      return { 
-        name: 'Edge (iOS)', 
-        isSupported: true, 
-        isInApp: false, 
-        isIOSBrowser: true,
-        message: 'กด Share แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"' 
-      };
-    }
-    // Opera บน iOS
-    if (ua.includes('opios') || ua.includes('opt/')) {
-      return { 
-        name: 'Opera (iOS)', 
-        isSupported: true, 
-        isInApp: false, 
-        isIOSBrowser: true,
-        message: 'กด Share แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"' 
-      };
-    }
-    // Safari บน iOS
-    if (ua.includes('safari') && !ua.includes('crios') && !ua.includes('fxios')) {
-      return { 
-        name: 'Safari (iOS)', 
-        isSupported: true, 
-        isInApp: false, 
-        isIOSBrowser: true,
-        message: 'กด Share แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"' 
-      };
-    }
-    // iOS browser อื่นๆ
     return { 
-      name: 'Browser (iOS)', 
-      isSupported: true, 
-      isInApp: false, 
-      isIOSBrowser: true,
-      message: 'กด Share แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"' 
+      name: 'unknown', 
+      displayName: 'Unknown',
+      isSupported: false, 
+      isInApp: false,
+      isUnknown: true,
+      platform: 'desktop'
     };
   }
   
-  // *** Desktop/Android Browser ***
+  const ua = navigator.userAgent;
+  const uaLower = ua.toLowerCase();
+  const platform = getPlatform();
+  const isIOS = checkIsIOS();
   
-  // ตรวจสอบ Brave ก่อน Chrome
+  // ===== 1. ตรวจสอบ In-app Browser ก่อน =====
+  
+  // ตรวจสอบ Telegram ก่อน (เพราะ UA อาจเหมือน Safari)
+  if (detectTelegram()) {
+    return { 
+      name: 'inapp', 
+      displayName: `Unknown (${platform})`,
+      isSupported: false, 
+      isInApp: true,
+      isUnknown: true,
+      platform,
+      inAppName: 'Telegram',
+      needsSafari: isIOS,
+      message: 'กรุณาเปิดใน Browser ที่รองรับ'
+    };
+  }
+  
+  // ตรวจสอบ In-app อื่นๆ จาก UA
+  const uaInApp = detectInAppByUA(ua);
+  if (uaInApp) {
+    return { 
+      name: 'inapp', 
+      displayName: `Unknown (${platform})`,
+      isSupported: false, 
+      isInApp: true,
+      isUnknown: true,
+      platform,
+      inAppName: uaInApp,
+      needsSafari: isIOS,
+      message: 'กรุณาเปิดใน Browser ที่รองรับ'
+    };
+  }
+  
+  // ===== 2. iOS =====
+  if (isIOS) {
+    // Chrome บน iOS
+    if (isIOSChrome(ua)) {
+      return { 
+        name: 'Chrome', 
+        displayName: 'Chrome (iOS)',
+        isSupported: true, 
+        isInApp: false, 
+        isUnknown: false,
+        platform: 'ios',
+        isIOSChrome: true,
+        message: 'กดปุ่ม Share (มุมขวาบน) แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"' 
+      };
+    }
+    
+    // Safari แท้บน iOS
+    if (isRealIOSSafari()) {
+      return { 
+        name: 'Safari', 
+        displayName: 'Safari (iOS)',
+        isSupported: true, 
+        isInApp: false, 
+        isUnknown: false,
+        platform: 'ios',
+        isIOSSafari: true,
+        message: 'กดปุ่ม Share (ด้านล่าง) แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"' 
+      };
+    }
+    
+    // iOS browser อื่นๆ - ไม่รองรับ ต้องเปิดใน Safari
+    return { 
+      name: 'unknown', 
+      displayName: 'Unknown (iOS)',
+      isSupported: false, 
+      isInApp: false, 
+      isUnknown: true,
+      platform: 'ios',
+      needsSafari: true,
+      message: 'กรุณาเปิดใน Safari'
+    };
+  }
+  
+  // ===== 3. Android =====
+  if (platform === 'android') {
+    // ตรวจสอบ WebView
+    if (isAndroidWebView(ua)) {
+      return { 
+        name: 'webview', 
+        displayName: 'Unknown (android)',
+        isSupported: false, 
+        isInApp: true,
+        isUnknown: true,
+        platform: 'android',
+        message: 'กรุณาเปิดใน Browser ที่รองรับ'
+      };
+    }
+    
+    // Brave
+    const isBrave = await checkIsBrave();
+    if (isBrave) {
+      return { 
+        name: 'Brave', 
+        displayName: 'Brave (android)',
+        isSupported: true, 
+        isInApp: false,
+        isUnknown: false,
+        platform: 'android',
+        isBrave: true
+      };
+    }
+    
+    // Edge
+    if (uaLower.includes('edg/') || uaLower.includes('edge/')) {
+      return { 
+        name: 'Edge', 
+        displayName: 'Edge (android)',
+        isSupported: true, 
+        isInApp: false,
+        isUnknown: false,
+        platform: 'android',
+        isEdge: true 
+      };
+    }
+    
+    // Opera
+    if (uaLower.includes('opr/') || uaLower.includes('opera')) {
+      return { 
+        name: 'Opera', 
+        displayName: 'Opera (android)',
+        isSupported: true, 
+        isInApp: false,
+        isUnknown: false,
+        platform: 'android'
+      };
+    }
+    
+    // Samsung Internet
+    if (uaLower.includes('samsungbrowser')) {
+      return { 
+        name: 'Samsung Internet', 
+        displayName: 'Samsung (android)',
+        isSupported: true, 
+        isInApp: false,
+        isUnknown: false,
+        platform: 'android'
+      };
+    }
+    
+    // Firefox
+    if (uaLower.includes('firefox')) {
+      return { 
+        name: 'Firefox', 
+        displayName: 'Firefox (android)',
+        isSupported: true, 
+        isInApp: false,
+        isUnknown: false,
+        platform: 'android'
+      };
+    }
+    
+    // Chrome แท้
+    if (isRealAndroidChrome(ua)) {
+      return { 
+        name: 'Chrome', 
+        displayName: 'Chrome (android)',
+        isSupported: true, 
+        isInApp: false,
+        isUnknown: false,
+        platform: 'android'
+      };
+    }
+    
+    // Android browser อื่นๆ - ไม่รองรับ
+    return { 
+      name: 'unknown', 
+      displayName: 'Unknown (android)',
+      isSupported: false, 
+      isInApp: false,
+      isUnknown: true,
+      platform: 'android',
+      message: 'กรุณาเปิดใน Browser ที่รองรับ'
+    };
+  }
+  
+  // ===== 4. Desktop =====
   const isBrave = await checkIsBrave();
   if (isBrave) {
     return { 
       name: 'Brave', 
+      displayName: 'Brave (desktop)',
       isSupported: true, 
-      isInApp: false, 
-      isBrave: true,
-      message: 'Brave รองรับ Push Notification (ต้องเปิดใช้งานใน Settings > Privacy > Use Google Services for Push Messaging)' 
+      isInApp: false,
+      isUnknown: false,
+      platform: 'desktop',
+      isBrave: true
     };
   }
   
-  // Edge
-  if (ua.includes('edg/') || ua.includes('edge/')) {
-    return { name: 'Edge', isSupported: true, isInApp: false, isEdge: true };
+  if (uaLower.includes('edg/') || uaLower.includes('edge/')) {
+    return { 
+      name: 'Edge', 
+      displayName: 'Edge (desktop)',
+      isSupported: true, 
+      isInApp: false,
+      isUnknown: false,
+      platform: 'desktop',
+      isEdge: true 
+    };
   }
   
-  // Opera
-  if (ua.includes('opr/') || ua.includes('opera')) {
-    return { name: 'Opera', isSupported: true, isInApp: false };
+  if (uaLower.includes('opr/') || uaLower.includes('opera')) {
+    return { 
+      name: 'Opera', 
+      displayName: 'Opera (desktop)',
+      isSupported: true, 
+      isInApp: false,
+      isUnknown: false,
+      platform: 'desktop'
+    };
   }
   
-  // Samsung Internet
-  if (ua.includes('samsungbrowser')) {
-    return { name: 'Samsung Internet', isSupported: true, isInApp: false };
+  if (uaLower.includes('firefox')) {
+    return { 
+      name: 'Firefox', 
+      displayName: 'Firefox (desktop)',
+      isSupported: true, 
+      isInApp: false,
+      isUnknown: false,
+      platform: 'desktop'
+    };
   }
   
-  // Firefox
-  if (ua.includes('firefox')) {
-    return { name: 'Firefox', isSupported: true, isInApp: false };
+  if (uaLower.includes('chrome') && !uaLower.includes('edg') && !uaLower.includes('opr')) {
+    return { 
+      name: 'Chrome', 
+      displayName: 'Chrome (desktop)',
+      isSupported: true, 
+      isInApp: false,
+      isUnknown: false,
+      platform: 'desktop'
+    };
   }
   
-  // Chrome
-  if (ua.includes('chrome') && !ua.includes('edg')) {
-    return { name: 'Chrome', isSupported: true, isInApp: false };
+  if (uaLower.includes('safari') && !uaLower.includes('chrome')) {
+    return { 
+      name: 'Safari', 
+      displayName: 'Safari (desktop)',
+      isSupported: true, 
+      isInApp: false,
+      isUnknown: false,
+      platform: 'desktop'
+    };
   }
   
-  // Safari (macOS)
-  if (ua.includes('safari') && !ua.includes('chrome')) {
-    return { name: 'Safari', isSupported: true, isInApp: false };
-  }
-  
-  // ไม่รู้จัก - ลองตรวจสอบ API
+  // ตรวจสอบ API
   const hasServiceWorker = 'serviceWorker' in navigator;
   const hasPushManager = 'PushManager' in window;
   const hasNotification = 'Notification' in window;
   
   if (hasServiceWorker && hasPushManager && hasNotification) {
-    return { name: 'Unknown', isSupported: true, isInApp: false };
+    return { 
+      name: 'unknown', 
+      displayName: `Unknown (${platform})`,
+      isSupported: true, 
+      isInApp: false,
+      isUnknown: true,
+      platform
+    };
   }
   
-  return { name: 'Unknown', isSupported: false, isInApp: false, message: 'เบราว์เซอร์นี้ไม่รองรับ Push Notification' };
+  return { 
+    name: 'unknown', 
+    displayName: `Unknown (${platform})`,
+    isSupported: false, 
+    isInApp: false,
+    isUnknown: true,
+    platform,
+    message: 'Browser นี้ไม่รองรับ' 
+  };
 }
 
 function checkIsStandalone(): boolean {
-  if (typeof window === 'undefined') return false;
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as unknown as { standalone?: boolean }).standalone === true
-  );
+  return isStandaloneMode();
 }
 
-function checkPushSupport(): boolean {
-  if (typeof window === 'undefined') return false;
-  return (
-    'serviceWorker' in navigator &&
-    'PushManager' in window &&
-    'Notification' in window
-  );
-}
-
-// ตรวจสอบว่า Brave เปิดใช้งาน Google Push Services หรือไม่
 async function checkBravePushEnabled(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
   try {
     const reg = await navigator.serviceWorker.ready;
-    const existingSub = await reg.pushManager.getSubscription();
-    if (existingSub) return true;
-    const permState = await reg.pushManager.permissionState({ userVisibleOnly: true });
-    return permState !== 'denied';
+    await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    return true;
   } catch {
     return false;
   }
@@ -282,70 +600,52 @@ export function usePushNotification(adminToken?: string): UsePushNotificationRet
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const [browserInfo, setBrowserInfo] = useState<BrowserInfo>({ name: 'unknown', isSupported: false, isInApp: false });
+  const [browserInfo, setBrowserInfo] = useState<BrowserInfo>({
+    name: 'unknown',
+    displayName: 'Unknown',
+    isSupported: false,
+    isInApp: false,
+    isUnknown: true,
+    platform: 'desktop'
+  });
 
-  // iOS ต้อง Add to Home Screen ก่อน (ไม่ว่าจะเป็น Safari, Chrome, Firefox ฯลฯ)
-  const needsInstall = isIOS && !isStandalone && browserInfo.isIOSBrowser === true;
+  const needsInstall = isIOS && !isStandalone && (browserInfo.isIOSSafari || browserInfo.isIOSChrome);
 
   useEffect(() => {
     const init = async () => {
-      // ตรวจสอบ browser
-      const browser = await detectBrowser();
-      setBrowserInfo(browser);
-      console.log('Browser detected:', browser);
-      
-      // ตรวจสอบ platform
       const ios = checkIsIOS();
       const standalone = checkIsStandalone();
+      const browser = await detectBrowser();
+      
       setIsIOS(ios);
       setIsStandalone(standalone);
+      setBrowserInfo(browser);
       
-      // In-app browser ไม่รองรับ
-      if (browser.isInApp || !browser.isSupported) {
-        console.log('Browser not supported:', browser.name);
+      if (!browser.isSupported || (ios && !standalone && (browser.isIOSSafari || browser.isIOSChrome))) {
         setIsSupported(false);
         return;
       }
       
-      // iOS ต้อง Add to Home Screen (ใช้ได้กับทุก browser)
-      if (ios && !standalone) {
-        console.log('iOS requires Add to Home Screen');
-        setIsSupported(false);
-        return;
-      }
-      
-      // ตรวจสอบ Push API
-      if (!checkPushSupport()) {
-        console.log('Push API not supported');
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
         setIsSupported(false);
         return;
       }
       
       setIsSupported(true);
-      
-      if ('Notification' in window) {
-        setPermission(Notification.permission);
-      }
+      setPermission(Notification.permission);
       
       try {
         const reg = await withTimeout(
           navigator.serviceWorker.register('/sw.js', { scope: '/' }),
           10000,
-          'Service worker registration timeout'
+          'Service worker timeout'
         );
         setRegistration(reg);
-        
-        await withTimeout(
-          navigator.serviceWorker.ready,
-          10000,
-          'Service worker ready timeout'
-        );
-        
+        await withTimeout(navigator.serviceWorker.ready, 10000, 'Service worker ready timeout');
         const subscription = await reg.pushManager.getSubscription();
         setIsSubscribed(!!subscription);
       } catch (err) {
         console.error('Service worker error:', err);
-        setError('Failed to register service worker');
         setIsSupported(false);
       }
     };
@@ -354,193 +654,85 @@ export function usePushNotification(adminToken?: string): UsePushNotificationRet
   }, []);
 
   const subscribe = useCallback(async () => {
-    if (!registration) {
-      setError('Service worker not registered');
-      return;
-    }
+    if (!registration) return;
     
     setIsLoading(true);
     setError(null);
     
     try {
-      console.log('Starting subscription process...');
+      await withTimeout(navigator.serviceWorker.ready, 10000, 'Service worker ไม่พร้อม');
       
-      // Step 1: รอ Service Worker ready
-      await withTimeout(
-        navigator.serviceWorker.ready,
-        10000,
-        'Service worker ไม่พร้อมใช้งาน กรุณารีเฟรชหน้าแล้วลองใหม่'
-      );
-      
-      // Step 2: ตรวจสอบ Permission
-      const currentPermission = Notification.permission;
-      
-      if (currentPermission === 'denied') {
-        if (browserInfo.isEdge) {
-          setError('Edge: การแจ้งเตือนถูกบล็อก กรุณาคลิกที่ไอคอน 🔒 ในแถบ URL แล้วเปิดใช้งาน Notifications');
-        } else {
-          setError('การแจ้งเตือนถูกบล็อก กรุณาเปิดใช้งานในการตั้งค่าเบราว์เซอร์');
-        }
+      if (Notification.permission === 'denied') {
+        setError('การแจ้งเตือนถูกบล็อก');
         setPermission('denied');
         setIsLoading(false);
         return;
       }
       
-      // Step 3: ขอ Permission
-      let perm: NotificationPermission;
-      
-      if (currentPermission === 'granted') {
-        perm = 'granted';
-      } else {
-        const permissionPromise = Notification.requestPermission();
-        
-        let resolved = false;
-        const pollInterval = setInterval(() => {
-          const newPerm = Notification.permission;
-          if (newPerm !== 'default') {
-            resolved = true;
-            clearInterval(pollInterval);
-          }
-        }, 500);
-        
-        const timeoutPromise = new Promise<NotificationPermission>((resolve) => {
-          setTimeout(() => {
-            if (!resolved) {
-              clearInterval(pollInterval);
-              resolve(Notification.permission);
-            }
-          }, 60000);
-        });
-        
-        try {
-          perm = await Promise.race([permissionPromise, timeoutPromise]);
-        } catch {
-          perm = Notification.permission;
-        }
-        
-        clearInterval(pollInterval);
+      let perm = Notification.permission;
+      if (perm !== 'granted') {
+        perm = await Notification.requestPermission();
       }
       
       setPermission(perm);
       
-      if (perm === 'default') {
-        if (browserInfo.isEdge) {
-          setError('Edge: Popup ขอสิทธิ์อาจไม่แสดง กรุณาคลิกที่ไอคอน 🔒 ในแถบ URL → Site permissions → Notifications → Allow');
-        } else {
-          setError('กรุณากดอนุญาต (Allow) เมื่อมี popup ปรากฏ');
-        }
-        setIsLoading(false);
-        return;
-      }
-      
       if (perm !== 'granted') {
-        if (browserInfo.isEdge) {
-          setError('Edge: กรุณาอนุญาตการแจ้งเตือน คลิกที่ไอคอน 🔒 ในแถบ URL → Notifications → Allow');
-        } else {
-          setError('กรุณากดอนุญาต (Allow) เพื่อรับการแจ้งเตือน');
-        }
+        setError('กรุณากดอนุญาต (Allow)');
         setIsLoading(false);
         return;
       }
       
-      // Step 4: Brave - ตรวจสอบ Google Push Services
       if (browserInfo.isBrave) {
-        const braveEnabled = await checkBravePushEnabled();
-        if (!braveEnabled) {
-          setError('Brave: กรุณาเปิด "Use Google Services for Push Messaging" ใน Settings > Privacy');
+        const ok = await checkBravePushEnabled();
+        if (!ok) {
+          setError('Brave: เปิด "Use Google Services for Push Messaging"');
           setIsLoading(false);
           return;
         }
       }
       
-      // Step 5: สร้าง Push Subscription
-      let subscription: PushSubscription;
+      const subscription = await withTimeout(
+        registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        }),
+        30000,
+        'หมดเวลา กรุณาลองใหม่'
+      );
       
-      try {
-        subscription = await withTimeout(
-          registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-          }),
-          30000,
-          'การสมัครรับการแจ้งเตือนหมดเวลา กรุณารีเฟรชหน้าแล้วลองใหม่'
-        );
-      } catch (pushError: unknown) {
-        console.error('Push subscription error:', pushError);
-        
-        const errorMessage = pushError instanceof Error ? pushError.message : String(pushError);
-        
-        if (browserInfo.isBrave && (errorMessage.includes('push service') || errorMessage.includes('Registration failed'))) {
-          setError('Brave: กรุณาเปิด "Use Google Services for Push Messaging" ใน brave://settings/privacy');
-          setIsLoading(false);
-          return;
-        }
-        
-        if (browserInfo.isEdge) {
-          setError('Edge: ไม่สามารถสมัครรับการแจ้งเตือนได้ กรุณาตรวจสอบการตั้งค่า Notifications');
-          setIsLoading(false);
-          return;
-        }
-        
-        throw pushError;
-      }
-      
-      // Step 6: ดึง Keys
       const p256dhKey = subscription.getKey('p256dh');
       const authKey = subscription.getKey('auth');
       
-      if (!p256dhKey || !authKey) {
-        throw new Error('ไม่สามารถสร้าง keys สำหรับการแจ้งเตือนได้');
-      }
+      if (!p256dhKey || !authKey) throw new Error('สร้าง keys ไม่ได้');
       
-      // Step 7: ส่งข้อมูลไป Server
-      const response = await withTimeout(
-        fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            endpoint: subscription.endpoint,
-            keys: {
-              p256dh: btoa(String.fromCharCode(...new Uint8Array(p256dhKey))),
-              auth: btoa(String.fromCharCode(...new Uint8Array(authKey)))
-            },
-            userAgent: navigator.userAgent,
-            adminToken: adminToken || undefined
-          })
-        }),
-        15000,
-        'การบันทึกข้อมูลหมดเวลา กรุณาลองใหม่'
-      );
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: btoa(String.fromCharCode(...new Uint8Array(p256dhKey))),
+            auth: btoa(String.fromCharCode(...new Uint8Array(authKey)))
+          },
+          userAgent: navigator.userAgent,
+          adminToken: adminToken || undefined
+        })
+      });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`บันทึกข้อมูลไม่สำเร็จ: ${errorText}`);
-      }
+      if (!response.ok) throw new Error('บันทึกไม่สำเร็จ');
       
       setIsSubscribed(true);
       
     } catch (err) {
-      console.error('Subscribe error:', err);
-      
-      const errorMessage = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการสมัคร';
-      
-      if (browserInfo.isBrave && (errorMessage.includes('push service') || errorMessage.includes('Registration failed'))) {
-        setError('Brave: ไปที่ brave://settings/privacy แล้วเปิด "Use Google Services for Push Messaging"');
-      } else {
-        setError(errorMessage);
-      }
+      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
     } finally {
       setIsLoading(false);
     }
-  }, [registration, adminToken, browserInfo.isBrave, browserInfo.isEdge]);
+  }, [registration, adminToken, browserInfo.isBrave]);
 
   const unsubscribe = useCallback(async () => {
-    if (!registration) {
-      setError('Service worker not registered');
-      return;
-    }
+    if (!registration) return;
     setIsLoading(true);
-    setError(null);
     try {
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
@@ -553,8 +745,7 @@ export function usePushNotification(adminToken?: string): UsePushNotificationRet
       }
       setIsSubscribed(false);
     } catch (err) {
-      console.error('Unsubscribe error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to unsubscribe');
+      setError(err instanceof Error ? err.message : 'Failed');
     } finally {
       setIsLoading(false);
     }

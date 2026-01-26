@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
   
   // Public routes - no auth required
   if (
-    pathname === '/login' ||
+    pathname === '/dash/login' ||
     pathname.startsWith('/s/') ||
     pathname === '/api/auth/login' ||
     pathname === '/api/subscribe' ||
@@ -34,7 +34,7 @@ export function middleware(request: NextRequest) {
   // Protect /admin routes
   if (pathname.startsWith('/admin')) {
     if (!sessionCookie) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/dash/login', request.url));
     }
     return NextResponse.next();
   }
@@ -47,10 +47,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Root path redirect to login
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // Root path - show 404 (no redirect to login)
+  // This hides the admin login path from public
   
   return NextResponse.next();
 }

@@ -84,10 +84,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       if (data.success) {
         setUser(data.data);
       } else {
-        router.push('/login');
+        router.push('/dash/login');
       }
     } catch {
-      router.push('/login');
+      router.push('/dash/login');
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +107,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     if (result.isConfirmed) {
       await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
+      router.push('/dash/login');
     }
   };
 
