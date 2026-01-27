@@ -21,11 +21,6 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
     </svg>
   ),
-  refresh: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-  ),
   user: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -141,50 +136,6 @@ export default function SettingsPage() {
     }
   };
 
-  const regenerateToken = async () => {
-    const result = await Swal.fire({
-      title: 'สร้าง URL ใหม่?',
-      text: 'URL เดิมจะไม่สามารถใช้งานได้อีก ผู้ใช้ที่สมัครด้วย URL เดิมจะยังคงอยู่ในระบบ',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#EF4444',
-      cancelButtonColor: '#64748B',
-      confirmButtonText: 'สร้างใหม่',
-      cancelButtonText: 'ยกเลิก'
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const response = await fetch('/api/admins', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: user?.id,
-            regenerateToken: true
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          Swal.fire({
-            icon: 'success',
-            title: 'สร้าง URL ใหม่สำเร็จ',
-            timer: 1500,
-            showConfirmButton: false
-          });
-          fetchUser();
-        }
-      } catch (error) {
-        Swal.fire({
-          icon: 'error',
-          title: 'เกิดข้อผิดพลาด',
-          text: error instanceof Error ? error.message : 'ไม่สามารถสร้าง URL ได้'
-        });
-      }
-    }
-  };
-
   const copyUrl = (url: string) => {
     navigator.clipboard.writeText(url);
     Swal.fire({
@@ -246,13 +197,6 @@ export default function SettingsPage() {
               >
                 {Icons.externalLink}
                 <span>เปิดดู</span>
-              </button>
-              <button
-                onClick={regenerateToken}
-                className="px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
-              >
-                {Icons.refresh}
-                <span>สร้าง URL ใหม่</span>
               </button>
             </div>
           </div>

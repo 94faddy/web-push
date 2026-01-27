@@ -27,6 +27,29 @@ function detectBrowser(userAgent: string): string {
   return 'Unknown';
 }
 
+// Log subscriber action
+async function logSubscriberAction(
+  adminId: number | null,
+  subscriberId: number | null,
+  action: 'subscribe' | 'unsubscribe' | 'resubscribe',
+  endpoint: string,
+  userAgent: string,
+  ip: string,
+  deviceType: string,
+  browser: string
+) {
+  try {
+    await query(
+      `INSERT INTO subscriber_logs (admin_id, subscriber_id, action, endpoint, user_agent, ip_address, device_type, browser)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [adminId, subscriberId, action, endpoint, userAgent, ip, deviceType, browser]
+    );
+  } catch (error) {
+    // If table doesn't exist, silently fail
+    console.error('Failed to log subscriber action:', error);
+  }
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
     const body = await request.json();
@@ -62,6 +85,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     );
 
     if (existing.length > 0) {
+      const existingSub = existing[0];
+      const wasInactive = !existingSub.is_active;
+      
       // Update existing subscription
       await query(
         `UPDATE subscribers SET 
@@ -72,9 +98,23 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         [keys.p256dh, keys.auth, userAgent, ip, deviceType, browser, adminId, endpoint]
       );
 
+      // Log resubscribe if was inactive before
+      if (wasInactive) {
+        await logSubscriberAction(
+          adminId || existingSub.admin_id,
+          existingSub.id,
+          'resubscribe',
+          endpoint,
+          userAgent || '',
+          ip,
+          deviceType,
+          browser
+        );
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'Subscription updated successfully'
+        message: wasInactive ? 'Resubscribed successfully' : 'Subscription updated successfully'
       });
     }
 
@@ -83,6 +123,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       `INSERT INTO subscribers (admin_id, endpoint, p256dh, auth, user_agent, ip_address, device_type, browser)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [adminId, endpoint, keys.p256dh, keys.auth, userAgent, ip, deviceType, browser]
+    );
+
+    // Log new subscription
+    await logSubscriberAction(
+      adminId,
+      result.insertId,
+      'subscribe',
+      endpoint,
+      userAgent || '',
+      ip,
+      deviceType,
+      browser
     );
 
     return NextResponse.json({
@@ -113,10 +165,33 @@ export async function DELETE(request: NextRequest): Promise<NextResponse<ApiResp
       }, { status: 400 });
     }
 
-    await query(
-      'UPDATE subscribers SET is_active = FALSE, updated_at = NOW() WHERE endpoint = ?',
+    // Get subscriber info before updating
+    const existing = await query<Subscriber[]>(
+      'SELECT id, admin_id, user_agent, ip_address, device_type, browser FROM subscribers WHERE endpoint = ?',
       [endpoint]
     );
+
+    if (existing.length > 0) {
+      const subscriber = existing[0];
+      
+      // Update subscriber status
+      await query(
+        'UPDATE subscribers SET is_active = FALSE, updated_at = NOW() WHERE endpoint = ?',
+        [endpoint]
+      );
+
+      // Log unsubscribe action
+      await logSubscriberAction(
+        subscriber.admin_id,
+        subscriber.id,
+        'unsubscribe',
+        endpoint,
+        subscriber.user_agent || '',
+        subscriber.ip_address || '',
+        subscriber.device_type || 'desktop',
+        subscriber.browser || 'Unknown'
+      );
+    }
 
     return NextResponse.json({
       success: true,

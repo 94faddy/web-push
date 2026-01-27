@@ -26,6 +26,12 @@ interface DailyStatResult {
   count: number;
 }
 
+interface SubscriberTrendResult {
+  date: string;
+  action: string;
+  count: number;
+}
+
 export async function GET(): Promise<NextResponse<ApiResponse<DashboardStats>>> {
   try {
     const admin = await getCurrentAdmin();
@@ -52,6 +58,9 @@ export async function GET(): Promise<NextResponse<ApiResponse<DashboardStats>>> 
       [adminId]
     );
     const activeSubscribers = activeResult[0]?.count || 0;
+
+    // Get inactive subscribers for this admin
+    const inactiveSubscribers = totalSubscribers - activeSubscribers;
 
     // Get total push sent
     const pushResult = await query<SumResult[]>(
@@ -177,11 +186,54 @@ export async function GET(): Promise<NextResponse<ApiResponse<DashboardStats>>> 
       ...stats
     }));
 
+    // Get subscriber trend data (subscribe/unsubscribe events)
+    const subscriberTrendData = await query<SubscriberTrendResult[]>(
+      `SELECT DATE(created_at) as date, action, COUNT(*) as count 
+       FROM subscriber_logs WHERE admin_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+       GROUP BY DATE(created_at), action ORDER BY date`,
+      [adminId]
+    ).catch(() => [] as SubscriberTrendResult[]); // If table doesn't exist yet, return empty array
+
+    // Build subscriber trend map
+    const trendMap: { [key: string]: { subscribes: number; unsubscribes: number } } = {};
+    
+    // Generate last 30 days for trend
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      trendMap[dateStr] = { subscribes: 0, unsubscribes: 0 };
+    }
+
+    subscriberTrendData.forEach(stat => {
+      const dateStr = new Date(stat.date).toISOString().split('T')[0];
+      if (trendMap[dateStr]) {
+        if (stat.action === 'subscribe' || stat.action === 'resubscribe') {
+          trendMap[dateStr].subscribes = stat.count;
+        } else if (stat.action === 'unsubscribe') {
+          trendMap[dateStr].unsubscribes = stat.count;
+        }
+      }
+    });
+
+    const subscriberTrend = Object.entries(trendMap).map(([date, stats]) => ({
+      date,
+      subscribes: stats.subscribes,
+      unsubscribes: stats.unsubscribes,
+      net: stats.subscribes - stats.unsubscribes
+    }));
+
+    // Get today's subscribe/unsubscribe counts
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todaySubscribes = trendMap[todayStr]?.subscribes || 0;
+    const todayUnsubscribes = trendMap[todayStr]?.unsubscribes || 0;
+
     return NextResponse.json({
       success: true,
       data: {
         totalSubscribers,
         activeSubscribers,
+        inactiveSubscribers,
         totalPushSent,
         totalClicks,
         successRate,
@@ -189,7 +241,11 @@ export async function GET(): Promise<NextResponse<ApiResponse<DashboardStats>>> 
         recentPushes,
         deviceStats: deviceStatMap,
         browserStats: browserStatMap,
-        dailyStats
+        dailyStats,
+        subscriberTrend,
+        todaySubscribes,
+        todayUnsubscribes,
+        lastUpdated: new Date().toISOString()
       }
     });
 

@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import Swal from 'sweetalert2';
-import { PushLog, Template } from '@/types';
+import { Template } from '@/types';
 
 // Icons
 const Icons = {
@@ -27,11 +29,6 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
     </svg>
   ),
-  check: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  ),
   info: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -47,53 +44,148 @@ const Icons = {
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
     </svg>
+  ),
+  settings: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  ),
+  upload: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+  x: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  ),
+  save: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+    </svg>
+  ),
+  check: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  ),
+  xCircle: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
   )
 };
 
 interface PushForm {
   title: string;
   body: string;
-  icon: string;
   image: string;
   url: string;
   saveAsTemplate: boolean;
   templateName: string;
 }
 
+interface PushSettings {
+  sender_name: string;
+  sender_icon: string | null;
+}
+
+// URL validation helper
+const isValidUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export default function SendPushPage() {
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'send' | 'settings'>('send');
+  
+  // Form state
   const [form, setForm] = useState<PushForm>({
     title: '',
     body: '',
-    icon: '',
     image: '',
     url: '',
     saveAsTemplate: false,
     templateName: ''
   });
+  
+  // Settings state
+  const [settings, setSettings] = useState<PushSettings>({
+    sender_name: 'แจ้งเตือน',
+    sender_icon: null
+  });
+  
   const [isSending, setIsSending] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [pushHistory, setPushHistory] = useState<PushLog[]>([]);
   const [activeSubscribers, setActiveSubscribers] = useState(0);
   const [showTemplates, setShowTemplates] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  
+  // Upload states
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
+
+  // Load template from history if coming from history page
+  useEffect(() => {
+    if (searchParams.get('from') === 'history') {
+      const savedTemplate = sessionStorage.getItem('pushTemplate');
+      if (savedTemplate) {
+        try {
+          const templateData = JSON.parse(savedTemplate);
+          setForm(prev => ({
+            ...prev,
+            title: templateData.title || '',
+            body: templateData.body || '',
+            image: templateData.image || '',
+            url: templateData.url || ''
+          }));
+          sessionStorage.removeItem('pushTemplate');
+          
+          Swal.fire({
+            icon: 'info',
+            title: 'โหลดข้อมูลจากประวัติ',
+            text: 'ข้อมูลจากประวัติการส่งถูกโหลดแล้ว',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        } catch (e) {
+          console.error('Failed to parse template:', e);
+        }
+      }
+    }
+  }, [searchParams]);
 
   const fetchData = useCallback(async () => {
     try {
-      const [templatesRes, historyRes, statsRes] = await Promise.all([
+      const [templatesRes, statsRes, settingsRes] = await Promise.all([
         fetch('/api/templates'),
-        fetch('/api/push'),
-        fetch('/api/stats')
+        fetch('/api/stats'),
+        fetch('/api/push-settings')
       ]);
 
-      const [templatesData, historyData, statsData] = await Promise.all([
+      const [templatesData, statsData, settingsData] = await Promise.all([
         templatesRes.json(),
-        historyRes.json(),
-        statsRes.json()
+        statsRes.json(),
+        settingsRes.json()
       ]);
 
       if (templatesData.success) setTemplates(templatesData.data || []);
-      if (historyData.success) setPushHistory(historyData.data || []);
       if (statsData.success) setActiveSubscribers(statsData.data.activeSubscribers || 0);
+      if (settingsData.success && settingsData.data) {
+        setSettings({
+          sender_name: settingsData.data.sender_name || 'แจ้งเตือน',
+          sender_icon: settingsData.data.sender_icon || null
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
@@ -112,12 +204,74 @@ export default function SendPushPage() {
     }));
   };
 
+  const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSettings(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (file: File, type: 'icon' | 'image') => {
+    if (type === 'icon') {
+      setUploadingIcon(true);
+    } else {
+      setUploadingImage(true);
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data?.url) {
+        if (type === 'icon') {
+          setSettings(prev => ({ ...prev, sender_icon: data.data.url }));
+          Swal.fire({
+            icon: 'success',
+            title: 'อัพโหลด Icon สำเร็จ',
+            text: 'ปรับขนาดเป็น 192x192 แล้ว',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } else {
+          setForm(prev => ({ ...prev, image: data.data.url }));
+          Swal.fire({
+            icon: 'success',
+            title: 'อัพโหลดรูปภาพสำเร็จ',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+      } else {
+        throw new Error(data.error || 'อัพโหลดไม่สำเร็จ');
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'อัพโหลดไม่สำเร็จ',
+        text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาด',
+        confirmButtonColor: '#22C55E'
+      });
+    } finally {
+      setUploadingIcon(false);
+      setUploadingImage(false);
+    }
+  };
+
   const loadTemplate = (template: Template) => {
     setForm(prev => ({
       ...prev,
       title: template.title,
       body: template.body,
-      icon: template.icon || '',
       image: template.image || '',
       url: template.url || ''
     }));
@@ -131,26 +285,78 @@ export default function SendPushPage() {
     });
   };
 
-  const loadFromHistory = (push: PushLog) => {
-    setForm(prev => ({
-      ...prev,
-      title: push.title,
-      body: push.body,
-      icon: push.icon || '',
-      image: push.image || '',
-      url: push.url || ''
-    }));
-    setShowHistory(false);
+  const handleSaveSettings = async () => {
+    if (!settings.sender_name.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'กรุณากรอกชื่อผู้ส่ง',
+        confirmButtonColor: '#22C55E'
+      });
+      return;
+    }
+
+    setIsSavingSettings(true);
+
+    try {
+      const response = await fetch('/api/push-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'บันทึกการตั้งค่าสำเร็จ',
+          text: 'การตั้งค่านี้จะใช้กับการส่งทุกครั้ง',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'บันทึกไม่สำเร็จ',
+        text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาด',
+        confirmButtonColor: '#22C55E'
+      });
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
+
+  // Validation
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+    
+    if (!form.title.trim()) errors.push('หัวข้อ');
+    if (!form.body.trim()) errors.push('ข้อความ');
+    if (!form.image.trim()) errors.push('รูปภาพใหญ่');
+    if (!form.url.trim()) errors.push('URL เมื่อคลิก');
+    
+    if (form.url.trim() && !isValidUrl(form.url.trim())) {
+      errors.push('URL ไม่ถูกต้อง');
+    }
+    
+    return errors;
+  };
+
+  const isFormValid = validateForm().length === 0;
 
   const handleSendPush = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.title.trim() || !form.body.trim()) {
+    const errors = validateForm();
+    
+    if (errors.length > 0) {
       Swal.fire({
         icon: 'error',
-        title: 'กรุณากรอกข้อมูล',
-        text: 'หัวข้อและข้อความจำเป็นต้องกรอก',
+        title: 'กรุณากรอกข้อมูลให้ครบ',
+        html: `<div class="text-left"><p>ข้อมูลที่ต้องกรอก:</p><ul class="list-disc pl-5 mt-2">${errors.map(e => `<li class="text-red-600">${e}</li>`).join('')}</ul></div>`,
         confirmButtonColor: '#22C55E'
       });
       return;
@@ -168,11 +374,12 @@ export default function SendPushPage() {
     const result = await Swal.fire({
       title: 'ยืนยันการส่ง',
       html: `
-        <div class="text-left">
+        <div class="text-left space-y-2">
+          <p><strong>ชื่อผู้ส่ง:</strong> ${settings.sender_name}</p>
           <p><strong>หัวข้อ:</strong> ${form.title}</p>
           <p><strong>ข้อความ:</strong> ${form.body}</p>
-          ${form.url ? `<p><strong>URL:</strong> ${form.url}</p>` : ''}
-          <p class="mt-3 text-green-600"><strong>ส่งไปยัง ${activeSubscribers} คน</strong></p>
+          <p><strong>URL:</strong> ${form.url}</p>
+          <p class="mt-4 text-green-600 font-semibold">ส่งไปยัง ${activeSubscribers} คน</p>
         </div>
       `,
       icon: 'question',
@@ -191,7 +398,10 @@ export default function SendPushPage() {
       const response = await fetch('/api/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          ...form,
+          icon: settings.sender_icon
+        })
       });
 
       const data = await response.json();
@@ -213,7 +423,6 @@ export default function SendPushPage() {
         setForm({
           title: '',
           body: '',
-          icon: '',
           image: '',
           url: '',
           saveAsTemplate: false,
@@ -222,13 +431,13 @@ export default function SendPushPage() {
 
         fetchData();
       } else {
-        throw new Error(data.error || 'Failed to send');
+        throw new Error(data.error);
       }
     } catch (error) {
       Swal.fire({
         icon: 'error',
-        title: 'เกิดข้อผิดพลาด',
-        text: error instanceof Error ? error.message : 'ไม่สามารถส่ง notification ได้',
+        title: 'ส่งไม่สำเร็จ',
+        text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาด',
         confirmButtonColor: '#22C55E'
       });
     } finally {
@@ -236,306 +445,567 @@ export default function SendPushPage() {
     }
   };
 
-  const formatDate = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('th-TH', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
-    <div className="p-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">ส่ง Push Notification</h1>
-        <p className="text-gray-500">ส่งข้อความแจ้งเตือนไปยังผู้ติดตาม</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">ส่ง Push Notification</h1>
+          <p className="text-gray-600 mt-1">
+            {activeSubscribers > 0 
+              ? `มีผู้ติดตาม ${activeSubscribers} คน`
+              : 'ยังไม่มีผู้ติดตาม'}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/admin/history"
+            className="px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
+          >
+            {Icons.history}
+            <span>ประวัติ</span>
+          </Link>
+          <button
+            onClick={() => setShowTemplates(!showTemplates)}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+              showTemplates 
+                ? 'bg-green-500 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {Icons.template}
+            <span>Templates</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Send Form */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            {/* Quick Actions */}
-            <div className="flex gap-2 mb-6">
+      {/* Templates Modal */}
+      {showTemplates && templates.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <h3 className="font-semibold text-gray-800 mb-4">เลือก Template</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {templates.map((template) => (
               <button
-                type="button"
-                onClick={() => { setShowTemplates(!showTemplates); setShowHistory(false); }}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${
-                  showTemplates ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                key={template.id}
+                onClick={() => loadTemplate(template)}
+                className="p-4 text-left bg-gray-50 hover:bg-green-50 rounded-lg border border-gray-200 hover:border-green-300 transition-all"
               >
-                {Icons.template}
-                <span>Templates ({templates.length})</span>
+                <div className="font-medium text-gray-800 truncate">{template.name}</div>
+                <div className="text-sm text-gray-500 truncate mt-1">{template.title}</div>
               </button>
-              <button
-                type="button"
-                onClick={() => { setShowHistory(!showHistory); setShowTemplates(false); }}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${
-                  showHistory ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {Icons.history}
-                <span>ประวัติ ({pushHistory.length})</span>
-              </button>
-            </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-            {/* Template Selection */}
-            {showTemplates && templates.length > 0 && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-medium text-gray-800 mb-3">เลือก Template</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                  {templates.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => loadTemplate(template)}
-                      className="text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-sm transition-all"
-                    >
-                      <div className="font-medium text-gray-800 truncate">{template.name}</div>
-                      <div className="text-xs text-gray-500 truncate">{template.title}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+      {/* Tabs */}
+      <div className="bg-white rounded-xl border border-gray-200 p-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('send')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'send'
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {Icons.send}
+            <span>ส่งข้อความ</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'settings'
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {Icons.settings}
+            <span>ตั้งค่าการส่ง</span>
+          </button>
+        </div>
+      </div>
 
-            {/* History Selection */}
-            {showHistory && pushHistory.length > 0 && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-medium text-gray-800 mb-3">เลือกจากประวัติ</h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {pushHistory.slice(0, 10).map((push) => (
-                    <button
-                      key={push.id}
-                      onClick={() => loadFromHistory(push)}
-                      className="w-full text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-sm transition-all"
-                    >
-                      <div className="font-medium text-gray-800 truncate">{push.title}</div>
-                      <div className="text-xs text-gray-500 truncate">{push.body}</div>
-                      <div className="text-xs text-gray-400 mt-1">{formatDate(push.created_at)}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleSendPush} className="space-y-5">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  หัวข้อ <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={form.title}
-                  onChange={handleInputChange}
-                  placeholder="กรอกหัวข้อข้อความ"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  maxLength={100}
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {form.title.length}/100 ตัวอักษร
-                </div>
-              </div>
-
-              {/* Body */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ข้อความ <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="body"
-                  value={form.body}
-                  onChange={handleInputChange}
-                  placeholder="กรอกเนื้อหาข้อความ"
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none transition-all"
-                  maxLength={255}
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {form.body.length}/255 ตัวอักษร
-                </div>
-              </div>
-
-              {/* Icon URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Icon URL <span className="text-gray-400 font-normal">(ไม่บังคับ)</span>
-                </label>
-                <input
-                  type="url"
-                  name="icon"
-                  value={form.icon}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/icon.png"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  แนะนำขนาด 192x192 px
-                </div>
-              </div>
-
-              {/* Image URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  รูปภาพใหญ่ <span className="text-gray-400 font-normal">(ไม่บังคับ)</span>
-                </label>
-                <input
-                  type="url"
-                  name="image"
-                  value={form.image}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/banner.jpg"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  รองรับเฉพาะ Chrome/Edge
-                </div>
-              </div>
-
-              {/* URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL เมื่อคลิก <span className="text-gray-400 font-normal">(ไม่บังคับ)</span>
-                </label>
-                <input
-                  type="url"
-                  name="url"
-                  value={form.url}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/promo"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  ระบบจะ track การคลิกอัตโนมัติ
-                </div>
-              </div>
-
-              {/* Save as Template */}
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="saveAsTemplate"
-                    checked={form.saveAsTemplate}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-green-500 rounded focus:ring-green-500 border-gray-300"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    บันทึกเป็น Template
-                  </span>
-                </label>
-                {form.saveAsTemplate && (
+      {/* Content based on Tab */}
+      {activeTab === 'send' ? (
+        /* Send Tab */
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Form */}
+          <div className="xl:col-span-2">
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <form onSubmit={handleSendPush} className="space-y-6">
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    หัวข้อ <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
-                    name="templateName"
-                    value={form.templateName}
+                    name="title"
+                    value={form.title}
                     onChange={handleInputChange}
-                    placeholder="ชื่อ Template"
-                    className="w-full mt-3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="กรอกหัวข้อข้อความ"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
+                      form.title.trim() ? 'border-green-300 bg-green-50/30' : 'border-gray-300'
+                    }`}
+                    maxLength={100}
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-500">{form.title.length}/100 ตัวอักษร</span>
+                    {form.title.trim() && <span className="text-xs text-green-600 flex items-center gap-1">{Icons.check} กรอกแล้ว</span>}
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ข้อความ <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="body"
+                    value={form.body}
+                    onChange={handleInputChange}
+                    placeholder="กรอกเนื้อหาข้อความ"
+                    rows={4}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none transition-all ${
+                      form.body.trim() ? 'border-green-300 bg-green-50/30' : 'border-gray-300'
+                    }`}
+                    maxLength={255}
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-500">{form.body.length}/255 ตัวอักษร</span>
+                    {form.body.trim() && <span className="text-xs text-green-600 flex items-center gap-1">{Icons.check} กรอกแล้ว</span>}
+                  </div>
+                </div>
+
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    รูปภาพใหญ่ <span className="text-red-500">*</span>
+                  </label>
+                  
+                  {form.image ? (
+                    <div className="relative">
+                      <img 
+                        src={form.image} 
+                        alt="Preview" 
+                        className="w-full h-48 object-cover rounded-lg border-2 border-green-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, image: '' }))}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-lg"
+                        title="ลบรูปภาพ"
+                      >
+                        {Icons.x}
+                      </button>
+                      <div className="absolute bottom-2 left-2 px-3 py-1 bg-green-500 text-white text-xs rounded-full flex items-center gap-1">
+                        {Icons.check} อัพโหลดแล้ว
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => imageInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-green-400 hover:bg-green-50/30 transition-all"
+                    >
+                      <input
+                        type="file"
+                        ref={imageInputRef}
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file, 'image');
+                          e.target.value = '';
+                        }}
+                      />
+                      {uploadingImage ? (
+                        <div className="flex flex-col items-center gap-3">
+                          {Icons.spinner}
+                          <span className="text-gray-500">กำลังอัพโหลด...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                            {Icons.upload}
+                          </div>
+                          <div>
+                            <p className="text-gray-600 font-medium">คลิกเพื่ออัพโหลดรูปภาพ</p>
+                            <p className="text-xs text-gray-400 mt-1">รองรับ JPG, PNG, GIF</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    * รูปภาพจะแสดงใน Notification (รองรับเฉพาะ Chrome/Edge)
+                  </p>
+                </div>
+
+                {/* URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URL เมื่อคลิก <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="url"
+                    name="url"
+                    value={form.url}
+                    onChange={handleInputChange}
+                    placeholder="https://example.com/promo"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
+                      form.url.trim() && isValidUrl(form.url.trim()) 
+                        ? 'border-green-300 bg-green-50/30' 
+                        : form.url.trim() && !isValidUrl(form.url.trim())
+                        ? 'border-red-300 bg-red-50/30'
+                        : 'border-gray-300'
+                    }`}
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-500">ระบบจะ track การคลิกอัตโนมัติ</span>
+                    {form.url.trim() && (
+                      isValidUrl(form.url.trim()) 
+                        ? <span className="text-xs text-green-600 flex items-center gap-1">{Icons.check} URL ถูกต้อง</span>
+                        : <span className="text-xs text-red-600 flex items-center gap-1">{Icons.xCircle} URL ไม่ถูกต้อง</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Save as Template */}
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="saveAsTemplate"
+                      checked={form.saveAsTemplate}
+                      onChange={handleInputChange}
+                      className="w-5 h-5 text-green-500 rounded focus:ring-green-500 border-gray-300"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      บันทึกเป็น Template
+                    </span>
+                  </label>
+                  {form.saveAsTemplate && (
+                    <input
+                      type="text"
+                      name="templateName"
+                      value={form.templateName}
+                      onChange={handleInputChange}
+                      placeholder="ชื่อ Template"
+                      className="w-full mt-3 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  )}
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={isSending || activeSubscribers === 0 || !isFormValid}
+                  className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-200"
+                >
+                  {isSending ? (
+                    <>
+                      {Icons.spinner}
+                      <span>กำลังส่ง...</span>
+                    </>
+                  ) : (
+                    <>
+                      {Icons.send}
+                      <span>ส่งไปยัง {activeSubscribers} คน</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Preview & Info */}
+          <div className="xl:col-span-1 space-y-6">
+            {/* Preview */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                {Icons.eye}
+                <h3 className="font-semibold text-gray-800">ตัวอย่าง</h3>
+              </div>
+              <div className="bg-gray-800 rounded-xl p-4 text-white">
+                <div className="flex items-start gap-3">
+                  {settings.sender_icon ? (
+                    <img src={settings.sender_icon} alt="" className="w-12 h-12 rounded-lg bg-white object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      {Icons.bell}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-400 mb-1">{settings.sender_name}</div>
+                    <div className="font-medium truncate">
+                      {form.title || 'หัวข้อข้อความ'}
+                    </div>
+                    <div className="text-sm text-gray-300 mt-1 line-clamp-2">
+                      {form.body || 'เนื้อหาข้อความ'}
+                    </div>
+                  </div>
+                </div>
+                {form.image && (
+                  <img 
+                    src={form.image} 
+                    alt="" 
+                    className="w-full h-32 object-cover rounded-lg mt-3"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
                 )}
               </div>
+              <p className="text-xs text-gray-500 mt-4 text-center">
+                * ตัวอย่างอาจแตกต่างในแต่ละ Browser
+              </p>
+            </div>
 
-              {/* Submit */}
+            {/* Required Fields Status */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                {Icons.info}
+                <h3 className="font-semibold text-gray-800">สถานะการกรอก</h3>
+              </div>
+              <div className="space-y-3">
+                <div className={`flex items-center justify-between p-3 rounded-lg ${form.title.trim() ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <span className="text-sm text-gray-700">หัวข้อ</span>
+                  {form.title.trim() 
+                    ? <span className="text-green-600">{Icons.check}</span>
+                    : <span className="text-gray-400">{Icons.xCircle}</span>
+                  }
+                </div>
+                <div className={`flex items-center justify-between p-3 rounded-lg ${form.body.trim() ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <span className="text-sm text-gray-700">ข้อความ</span>
+                  {form.body.trim() 
+                    ? <span className="text-green-600">{Icons.check}</span>
+                    : <span className="text-gray-400">{Icons.xCircle}</span>
+                  }
+                </div>
+                <div className={`flex items-center justify-between p-3 rounded-lg ${form.image.trim() ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <span className="text-sm text-gray-700">รูปภาพใหญ่</span>
+                  {form.image.trim() 
+                    ? <span className="text-green-600">{Icons.check}</span>
+                    : <span className="text-gray-400">{Icons.xCircle}</span>
+                  }
+                </div>
+                <div className={`flex items-center justify-between p-3 rounded-lg ${form.url.trim() && isValidUrl(form.url.trim()) ? 'bg-green-50' : form.url.trim() ? 'bg-red-50' : 'bg-gray-50'}`}>
+                  <span className="text-sm text-gray-700">URL เมื่อคลิก</span>
+                  {form.url.trim() && isValidUrl(form.url.trim())
+                    ? <span className="text-green-600">{Icons.check}</span>
+                    : form.url.trim()
+                    ? <span className="text-red-600">{Icons.xCircle}</span>
+                    : <span className="text-gray-400">{Icons.xCircle}</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            {/* Settings Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                {Icons.settings}
+                <h3 className="font-semibold text-blue-800">การตั้งค่าปัจจุบัน</h3>
+              </div>
+              <div className="space-y-3 text-sm text-blue-700">
+                <div className="flex items-center gap-3">
+                  <span className="font-medium">ชื่อผู้ส่ง:</span>
+                  <span>{settings.sender_name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium">Icon:</span>
+                  {settings.sender_icon ? (
+                    <img src={settings.sender_icon} alt="" className="w-8 h-8 rounded" />
+                  ) : (
+                    <span className="text-gray-400">ใช้ค่าเริ่มต้น</span>
+                  )}
+                </div>
+              </div>
               <button
-                type="submit"
-                disabled={isSending || activeSubscribers === 0}
-                className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-200"
+                onClick={() => setActiveTab('settings')}
+                className="mt-4 text-sm text-blue-600 hover:text-blue-800 underline"
               >
-                {isSending ? (
-                  <>
-                    {Icons.spinner}
-                    <span>กำลังส่ง...</span>
-                  </>
-                ) : (
-                  <>
-                    {Icons.send}
-                    <span>ส่งไปยัง {activeSubscribers} คน</span>
-                  </>
-                )}
+                แก้ไขการตั้งค่า →
               </button>
-            </form>
+            </div>
           </div>
         </div>
+      ) : (
+        /* Settings Tab */
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2">
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">ตั้งค่าการส่ง Push Notification</h3>
+              <p className="text-gray-600 mb-6">
+                การตั้งค่านี้จะใช้กับการส่ง Push Notification ทุกครั้ง และใช้แสดงใน PWA Shortcut (iOS Add to Home Screen)
+              </p>
 
-        {/* Preview & Info */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Preview */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              {Icons.eye}
-              <h3 className="font-semibold text-gray-800">ตัวอย่าง</h3>
+              <div className="space-y-6">
+                {/* Sender Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ชื่อผู้ส่ง / ชื่อ App <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="sender_name"
+                    value={settings.sender_name}
+                    onChange={handleSettingsChange}
+                    placeholder="แจ้งเตือน"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                    maxLength={100}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    ชื่อนี้จะแสดงใน Notification และเป็นชื่อ App บน iOS Home Screen
+                  </p>
+                </div>
+
+                {/* Sender Icon */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Icon <span className="text-gray-400 font-normal">(แนะนำขนาด 192x192 px)</span>
+                  </label>
+                  <div className="flex gap-4 items-start">
+                    {/* Icon Preview */}
+                    <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden flex-shrink-0">
+                      {settings.sender_icon ? (
+                        <img src={settings.sender_icon} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-gray-400 text-center">
+                          <div className="w-8 h-8 mx-auto mb-1">{Icons.upload}</div>
+                          <span className="text-xs">No Icon</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-3">
+                      <input
+                        type="file"
+                        ref={iconInputRef}
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file, 'icon');
+                          e.target.value = '';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => iconInputRef.current?.click()}
+                        disabled={uploadingIcon}
+                        className="w-full px-4 py-3 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+                      >
+                        {uploadingIcon ? Icons.spinner : Icons.upload}
+                        <span>{uploadingIcon ? 'กำลังอัพโหลด...' : 'อัพโหลด Icon'}</span>
+                      </button>
+                      {settings.sender_icon && (
+                        <button
+                          type="button"
+                          onClick={() => setSettings(prev => ({ ...prev, sender_icon: null }))}
+                          className="w-full text-sm text-red-600 hover:text-red-800 py-2"
+                        >
+                          ลบ Icon
+                        </button>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        ระบบจะปรับขนาดรูปเป็น 192x192 อัตโนมัติ
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={isSavingSettings}
+                  className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-200"
+                >
+                  {isSavingSettings ? (
+                    <>
+                      {Icons.spinner}
+                      <span>กำลังบันทึก...</span>
+                    </>
+                  ) : (
+                    <>
+                      {Icons.save}
+                      <span>บันทึกการตั้งค่า</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="bg-gray-800 rounded-xl p-4 text-white">
-              <div className="flex items-start gap-3">
-                {form.icon ? (
-                  <img src={form.icon} alt="" className="w-10 h-10 rounded-lg bg-white object-cover" />
-                ) : (
-                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                    {Icons.bell}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">
-                    {form.title || 'หัวข้อข้อความ'}
-                  </div>
-                  <div className="text-sm text-gray-300 mt-1 line-clamp-2">
-                    {form.body || 'เนื้อหาข้อความ'}
+          </div>
+
+          {/* Preview */}
+          <div className="xl:col-span-1 space-y-6">
+            {/* Notification Preview */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                {Icons.eye}
+                <h3 className="font-semibold text-gray-800">ตัวอย่าง Notification</h3>
+              </div>
+              <div className="bg-gray-800 rounded-xl p-4 text-white">
+                <div className="flex items-start gap-3">
+                  {settings.sender_icon ? (
+                    <img src={settings.sender_icon} alt="" className="w-12 h-12 rounded-lg bg-white object-cover" />
+                  ) : (
+                    <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                      {Icons.bell}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-400 mb-1">{settings.sender_name}</div>
+                    <div className="font-medium truncate">หัวข้อตัวอย่าง</div>
+                    <div className="text-sm text-gray-300 mt-1">ข้อความตัวอย่าง</div>
                   </div>
                 </div>
               </div>
-              {form.image && (
-                <img 
-                  src={form.image} 
-                  alt="" 
-                  className="w-full h-32 object-cover rounded-lg mt-3"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              )}
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-center">
-              * ตัวอย่างอาจแตกต่างในแต่ละ Browser
-            </p>
-          </div>
 
-          {/* Info */}
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              {Icons.info}
-              <h3 className="font-semibold text-green-800">ข้อมูลที่รองรับ</h3>
+            {/* PWA Preview */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                {Icons.bell}
+                <h3 className="font-semibold text-gray-800">ตัวอย่าง iOS Home Screen</h3>
+              </div>
+              <div className="bg-gradient-to-b from-blue-100 to-blue-200 rounded-xl p-8">
+                <div className="flex flex-col items-center">
+                  <div className="w-20 h-20 rounded-2xl bg-white shadow-lg overflow-hidden flex items-center justify-center">
+                    {settings.sender_icon ? (
+                      <img src={settings.sender_icon} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center text-white">
+                        {Icons.bell}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 text-sm text-gray-800 font-medium text-center truncate max-w-[100px]">
+                    {settings.sender_name}
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-4 text-center">
+                * แสดงเมื่อ user กด &quot;เพิ่มไปยังหน้าจอหลัก&quot;
+              </p>
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-700">
-                <span className="text-green-500">{Icons.check}</span>
-                <span>Title & Body</span>
+
+            {/* Info */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                {Icons.info}
+                <h3 className="font-semibold text-yellow-800">หมายเหตุ</h3>
               </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span className="text-green-500">{Icons.check}</span>
-                <span>Emoji รองรับทุกแบบ</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span className="text-green-500">{Icons.check}</span>
-                <span>Icon</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span className="text-green-500">{Icons.check}</span>
-                <span>URL + Click Tracking</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-500">
-                <span className="text-yellow-500">{Icons.info}</span>
-                <span>Image (Chrome/Edge)</span>
-              </div>
+              <ul className="text-sm text-yellow-700 space-y-2">
+                <li>• ชื่อและ Icon จะใช้กับทุกการส่ง</li>
+                <li>• iOS จะแสดงชื่อนี้เป็นชื่อ App</li>
+                <li>• แนะนำใช้รูป PNG ขนาด 192x192</li>
+              </ul>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

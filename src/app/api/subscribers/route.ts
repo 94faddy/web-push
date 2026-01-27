@@ -1,76 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { getConnection } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
-import { ApiResponse, Subscriber } from '@/types';
+import { ApiResponse } from '@/types';
+import { RowDataPacket } from 'mysql2';
 
-// Get subscribers for current admin
-export async function GET(): Promise<NextResponse<ApiResponse<Subscriber[]>>> {
+// GET - Get all subscribers
+export async function GET() {
   try {
     const admin = await getCurrentAdmin();
-    
     if (!admin) {
-      return NextResponse.json({
+      return NextResponse.json<ApiResponse>({
         success: false,
-        error: 'ไม่ได้เข้าสู่ระบบ'
+        error: 'Unauthorized'
       }, { status: 401 });
     }
 
-    const subscribers = await query<Subscriber[]>(
-      `SELECT * FROM subscribers WHERE admin_id = ? ORDER BY created_at DESC`,
+    const connection = await getConnection();
+    
+    const [rows] = await connection.execute<RowDataPacket[]>(
+      `SELECT id, endpoint, device_type, browser, is_active, created_at, updated_at
+       FROM subscribers 
+       WHERE admin_id = ?
+       ORDER BY created_at DESC`,
       [admin.id]
     );
 
-    return NextResponse.json({
+    connection.release();
+
+    return NextResponse.json<ApiResponse>({
       success: true,
-      data: subscribers
+      data: rows
     });
 
   } catch (error) {
     console.error('Get subscribers error:', error);
-    return NextResponse.json({
+    return NextResponse.json<ApiResponse>({
       success: false,
       error: 'Failed to get subscribers'
     }, { status: 500 });
   }
 }
 
-// Delete/deactivate subscriber
-export async function DELETE(request: NextRequest): Promise<NextResponse<ApiResponse>> {
+// DELETE - Delete subscribers by IDs
+export async function DELETE(request: NextRequest) {
   try {
     const admin = await getCurrentAdmin();
-    
     if (!admin) {
-      return NextResponse.json({
+      return NextResponse.json<ApiResponse>({
         success: false,
-        error: 'ไม่ได้เข้าสู่ระบบ'
+        error: 'Unauthorized'
       }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { id } = body;
+    const { ids } = await request.json();
 
-    if (!id) {
-      return NextResponse.json({
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json<ApiResponse>({
         success: false,
-        error: 'Missing subscriber ID'
+        error: 'No IDs provided'
       }, { status: 400 });
     }
 
-    await query(
-      'UPDATE subscribers SET is_active = FALSE WHERE id = ? AND admin_id = ?',
-      [id, admin.id]
+    const connection = await getConnection();
+
+    // Only allow deleting inactive subscribers
+    const placeholders = ids.map(() => '?').join(',');
+    const [result] = await connection.execute(
+      `DELETE FROM subscribers 
+       WHERE id IN (${placeholders}) 
+       AND admin_id = ? 
+       AND is_active = FALSE`,
+      [...ids, admin.id]
     );
 
-    return NextResponse.json({
+    connection.release();
+
+    return NextResponse.json<ApiResponse>({
       success: true,
-      message: 'Subscriber deactivated'
+      message: `Deleted ${(result as { affectedRows: number }).affectedRows} subscribers`
     });
 
   } catch (error) {
-    console.error('Delete subscriber error:', error);
-    return NextResponse.json({
+    console.error('Delete subscribers error:', error);
+    return NextResponse.json<ApiResponse>({
       success: false,
-      error: 'Failed to deactivate subscriber'
+      error: 'Failed to delete subscribers'
     }, { status: 500 });
   }
 }

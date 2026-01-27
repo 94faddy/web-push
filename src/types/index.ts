@@ -15,6 +15,20 @@ export interface Subscriber {
   last_push_at?: Date;
 }
 
+// Subscriber Log types for tracking subscribe/unsubscribe events
+export interface SubscriberLog {
+  id: number;
+  admin_id: number | null;
+  subscriber_id: number | null;
+  action: 'subscribe' | 'unsubscribe' | 'resubscribe';
+  endpoint?: string;
+  user_agent?: string;
+  ip_address?: string;
+  device_type: 'desktop' | 'mobile' | 'tablet';
+  browser?: string;
+  created_at: Date;
+}
+
 // Push log types
 export interface PushLog {
   id: number;
@@ -41,6 +55,21 @@ export interface PushDelivery {
   status: 'success' | 'failed' | 'expired';
   error_message?: string;
   created_at: Date;
+  // Joined fields from subscribers table
+  subscriber_endpoint?: string;
+  subscriber_device_type?: string;
+  subscriber_browser?: string;
+}
+
+// Push Detail types (for detailed view)
+export interface PushDetail extends PushLog {
+  deliveries: PushDelivery[];
+  delivery_stats: {
+    success: number;
+    failed: number;
+    expired: number;
+  };
+  click_details: ClickTracking[];
 }
 
 // Admin types
@@ -130,6 +159,7 @@ export interface PushNotificationInput {
 export interface DashboardStats {
   totalSubscribers: number;
   activeSubscribers: number;
+  inactiveSubscribers: number;
   totalPushSent: number;
   totalClicks: number;
   successRate: number;
@@ -149,6 +179,16 @@ export interface DashboardStats {
     pushes: number;
     clicks: number;
   }[];
+  // New subscriber tracking stats
+  subscriberTrend: {
+    date: string;
+    subscribes: number;
+    unsubscribes: number;
+    net: number;
+  }[];
+  todaySubscribes: number;
+  todayUnsubscribes: number;
+  lastUpdated: string;
 }
 
 // Auth types
@@ -211,6 +251,14 @@ export interface PageSettings {
   // Page Text
   page_title: string;
   page_subtitle: string;
+  
+  // =====================================================
+  // PWA SETTINGS (for iOS Add to Home Screen)
+  // =====================================================
+  pwa_name: string;
+  pwa_short_name: string;
+  pwa_icon?: string;
+  pwa_theme_color: string;
   
   // =====================================================
   // SUBSCRIBE FORM PAGE
@@ -322,6 +370,12 @@ export interface PageSettingsInput {
   logo_width?: number;
   page_title?: string;
   page_subtitle?: string;
+  
+  // PWA Settings
+  pwa_name?: string;
+  pwa_short_name?: string;
+  pwa_icon?: string;
+  pwa_theme_color?: string;
   
   // Subscribe Form
   subscribe_icon?: string;

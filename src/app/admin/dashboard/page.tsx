@@ -15,7 +15,9 @@ import {
   Cell,
   BarChart,
   Bar,
-  Legend
+  Legend,
+  AreaChart,
+  Area
 } from 'recharts';
 
 // Icons
@@ -23,6 +25,16 @@ const Icons = {
   users: (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  ),
+  userPlus: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+    </svg>
+  ),
+  userMinus: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
     </svg>
   ),
   send: (
@@ -70,6 +82,17 @@ const Icons = {
     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
     </svg>
+  ),
+  refresh: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+  ),
+  eye: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
   )
 };
 
@@ -78,26 +101,38 @@ const COLORS = ['#22C55E', '#3B82F6', '#F59E0B', '#EF4444', '#A855F7', '#EC4899'
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (showRefreshIndicator = false) => {
+    if (showRefreshIndicator) {
+      setIsRefreshing(true);
+    }
     try {
       const response = await fetch('/api/stats');
       const data = await response.json();
       if (data.success) {
         setStats(data.data);
+        setLastUpdated(new Date().toLocaleTimeString('th-TH'));
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 30000);
+    // Auto refresh every 5 minutes instead of 30 seconds to reduce load
+    const interval = setInterval(() => fetchStats(false), 300000);
     return () => clearInterval(interval);
   }, [fetchStats]);
+
+  const handleRefresh = () => {
+    fetchStats(true);
+  };
 
   const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
@@ -139,12 +174,38 @@ export default function DashboardPage() {
     clicks: day.clicks
   })) || [];
 
+  const subscriberTrendData = stats?.subscriberTrend?.map(day => ({
+    date: new Date(day.date).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }),
+    subscribes: day.subscribes,
+    unsubscribes: day.unsubscribes,
+    net: day.net
+  })) || [];
+
   return (
     <div className="p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-500">ภาพรวมระบบ Web Push Notification</p>
+      {/* Header with Refresh Button */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+          <p className="text-gray-500">ภาพรวมระบบ Web Push Notification</p>
+        </div>
+        <div className="flex items-center gap-4">
+          {lastUpdated && (
+            <span className="text-xs text-gray-400">
+              อัพเดทล่าสุด: {lastUpdated}
+            </span>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all flex items-center gap-2 text-sm font-medium text-gray-700 ${isRefreshing ? 'opacity-50' : ''}`}
+          >
+            <span className={isRefreshing ? 'animate-spin' : ''}>
+              {Icons.refresh}
+            </span>
+            <span>รีเฟรช</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -205,12 +266,19 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 card-hover">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-500 mb-1">อัตราสำเร็จ</div>
-              <div className="text-3xl font-bold text-gray-800">
-                {stats?.successRate || 0}%
+              <div className="text-sm text-gray-500 mb-1">วันนี้</div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 text-green-600">
+                  {Icons.userPlus}
+                  <span className="text-lg font-bold">+{stats?.todaySubscribes || 0}</span>
+                </div>
+                <div className="flex items-center gap-1 text-red-500">
+                  {Icons.userMinus}
+                  <span className="text-lg font-bold">-{stats?.todayUnsubscribes || 0}</span>
+                </div>
               </div>
               <div className="text-xs text-gray-400 mt-1">
-                Delivery Rate
+                Subscribe / Unsubscribe
               </div>
             </div>
             <div className="icon-bg icon-bg-orange">
@@ -219,6 +287,36 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Subscriber Trend Chart */}
+      {subscriberTrendData.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-800">แนวโน้มผู้ติดตาม</h3>
+            <span className="text-xs text-gray-500">30 วันที่ผ่านมา</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={subscriberTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#64748B' }} />
+                <YAxis tick={{ fontSize: 12, fill: '#64748B' }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }} 
+                />
+                <Legend />
+                <Area type="monotone" dataKey="subscribes" stroke="#22C55E" fill="#22C55E" fillOpacity={0.2} name="สมัคร" />
+                <Area type="monotone" dataKey="unsubscribes" stroke="#EF4444" fill="#EF4444" fillOpacity={0.2} name="ยกเลิก" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -251,7 +349,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Channel Stats (like in BevChat) */}
+        {/* Channel Stats */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-800">อุปกรณ์ยอดนิยม</h3>
@@ -324,14 +422,18 @@ export default function DashboardPage() {
 
         {/* Recent Push History */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-6">การส่งล่าสุด</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-800">การส่งล่าสุด</h3>
+            <a href="/admin/history" className="text-xs text-green-600 hover:underline">ดูทั้งหมด</a>
+          </div>
           <div className="h-64 overflow-y-auto">
             {stats?.recentPushes && stats.recentPushes.length > 0 ? (
               <div className="space-y-3">
                 {stats.recentPushes.slice(0, 5).map((push: PushLog) => (
-                  <div
+                  <a
                     key={push.id}
-                    className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    href={`/admin/history/${push.id}`}
+                    className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors block"
                   >
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600 flex-shrink-0">
                       {Icons.send}
@@ -356,7 +458,10 @@ export default function DashboardPage() {
                         <span>• {formatDate(push.created_at)}</span>
                       </div>
                     </div>
-                  </div>
+                    <div className="text-gray-400">
+                      {Icons.eye}
+                    </div>
+                  </a>
                 ))}
               </div>
             ) : (

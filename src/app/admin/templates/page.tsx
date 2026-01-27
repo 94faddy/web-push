@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Swal from 'sweetalert2';
 import { Template } from '@/types';
 
@@ -41,6 +41,42 @@ const Icons = {
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
     </svg>
+  ),
+  upload: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+  x: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  ),
+  bell: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
+  ),
+  info: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  eye: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  ),
+  check: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  ),
+  xCircle: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
   )
 };
 
@@ -49,18 +85,31 @@ interface TemplateForm {
   name: string;
   title: string;
   body: string;
-  icon: string;
   image: string;
   url: string;
+}
+
+interface PushSettings {
+  sender_name: string;
+  sender_icon: string | null;
 }
 
 const emptyForm: TemplateForm = {
   name: '',
   title: '',
   body: '',
-  icon: '',
   image: '',
   url: ''
+};
+
+// URL validation helper
+const isValidUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export default function TemplatesPage() {
@@ -70,28 +119,87 @@ export default function TemplatesPage() {
   const [form, setForm] = useState<TemplateForm>(emptyForm);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showPreview, setShowPreview] = useState<Template | null>(null);
+  const [pushSettings, setPushSettings] = useState<PushSettings>({
+    sender_name: 'แจ้งเตือน',
+    sender_icon: null
+  });
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchTemplates = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const response = await fetch('/api/templates');
-      const data = await response.json();
-      if (data.success) {
-        setTemplates(data.data || []);
+      const [templatesRes, settingsRes] = await Promise.all([
+        fetch('/api/templates'),
+        fetch('/api/push-settings')
+      ]);
+      
+      const [templatesData, settingsData] = await Promise.all([
+        templatesRes.json(),
+        settingsRes.json()
+      ]);
+      
+      if (templatesData.success) {
+        setTemplates(templatesData.data || []);
+      }
+      if (settingsData.success && settingsData.data) {
+        setPushSettings({
+          sender_name: settingsData.data.sender_name || 'แจ้งเตือน',
+          sender_icon: settingsData.data.sender_icon || null
+        });
       }
     } catch (error) {
-      console.error('Failed to fetch templates:', error);
+      console.error('Failed to fetch data:', error);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
+    fetchData();
+  }, [fetchData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'image');
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data?.url) {
+        setForm(prev => ({ ...prev, image: data.data.url }));
+        Swal.fire({
+          icon: 'success',
+          title: 'อัพโหลดรูปภาพสำเร็จ',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } else {
+        throw new Error(data.error || 'อัพโหลดไม่สำเร็จ');
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'อัพโหลดไม่สำเร็จ',
+        text: error instanceof Error ? error.message : 'เกิดข้อผิดพลาด',
+        confirmButtonColor: '#22C55E'
+      });
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const openCreateForm = () => {
@@ -106,7 +214,6 @@ export default function TemplatesPage() {
       name: template.name,
       title: template.title,
       body: template.body,
-      icon: template.icon || '',
       image: template.image || '',
       url: template.url || ''
     });
@@ -114,14 +221,35 @@ export default function TemplatesPage() {
     setShowForm(true);
   };
 
+  // Validation
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+    
+    if (!form.name.trim()) errors.push('ชื่อ Template');
+    if (!form.title.trim()) errors.push('หัวข้อ');
+    if (!form.body.trim()) errors.push('ข้อความ');
+    if (!form.image.trim()) errors.push('รูปภาพใหญ่');
+    if (!form.url.trim()) errors.push('URL เมื่อคลิก');
+    
+    if (form.url.trim() && !isValidUrl(form.url.trim())) {
+      errors.push('URL ไม่ถูกต้อง');
+    }
+    
+    return errors;
+  };
+
+  const isFormValid = validateForm().length === 0;
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.name.trim() || !form.title.trim() || !form.body.trim()) {
+    const errors = validateForm();
+    
+    if (errors.length > 0) {
       Swal.fire({
         icon: 'error',
-        title: 'กรุณากรอกข้อมูล',
-        text: 'ชื่อ, หัวข้อ และข้อความจำเป็นต้องกรอก',
+        title: 'กรุณากรอกข้อมูลให้ครบ',
+        html: `<div class="text-left"><p>ข้อมูลที่ต้องกรอก:</p><ul class="list-disc pl-5 mt-2">${errors.map(e => `<li class="text-red-600">${e}</li>`).join('')}</ul></div>`,
         confirmButtonColor: '#22C55E'
       });
       return;
@@ -147,7 +275,7 @@ export default function TemplatesPage() {
         });
         setShowForm(false);
         setForm(emptyForm);
-        fetchTemplates();
+        fetchData();
       } else {
         throw new Error(data.error);
       }
@@ -192,7 +320,7 @@ export default function TemplatesPage() {
             timer: 1500,
             showConfirmButton: false
           });
-          fetchTemplates();
+          fetchData();
         }
       } catch (error) {
         Swal.fire({
@@ -227,10 +355,10 @@ export default function TemplatesPage() {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Templates</h1>
-          <p className="text-gray-500">จัดการข้อความที่ใช้บ่อย</p>
+          <p className="text-gray-500 mt-1">จัดการข้อความที่ใช้บ่อย</p>
         </div>
         <button
           onClick={openCreateForm}
@@ -240,6 +368,68 @@ export default function TemplatesPage() {
           <span>สร้าง Template</span>
         </button>
       </div>
+
+      {/* Info Box */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="text-blue-600 mt-0.5">{Icons.info}</div>
+          <div>
+            <h3 className="font-semibold text-blue-800 mb-1">การใช้งาน Template</h3>
+            <p className="text-sm text-blue-700">
+              Template จะใช้ <strong>ชื่อผู้ส่ง</strong> และ <strong>Icon</strong> จากการตั้งค่าในหน้า &quot;ส่งข้อความ&quot; → &quot;ตั้งค่าการส่ง&quot;
+            </p>
+            <div className="flex items-center gap-2 mt-2 text-sm">
+              <span className="text-blue-600">การตั้งค่าปัจจุบัน:</span>
+              {pushSettings.sender_icon && (
+                <img src={pushSettings.sender_icon} alt="" className="w-5 h-5 rounded" />
+              )}
+              <span className="font-medium text-blue-800">{pushSettings.sender_name}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="font-bold text-gray-800">ตัวอย่าง: {showPreview.name}</h2>
+              <button onClick={() => setShowPreview(null)} className="text-gray-400 hover:text-gray-600">
+                {Icons.close}
+              </button>
+            </div>
+            <div className="p-5">
+              <div className="bg-gray-800 rounded-xl p-4 text-white">
+                <div className="flex items-start gap-3">
+                  {pushSettings.sender_icon ? (
+                    <img src={pushSettings.sender_icon} alt="" className="w-12 h-12 rounded-lg bg-white object-cover" />
+                  ) : (
+                    <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                      {Icons.bell}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-400 mb-1">{pushSettings.sender_name}</div>
+                    <div className="font-medium truncate">{showPreview.title}</div>
+                    <div className="text-sm text-gray-300 mt-1 line-clamp-2">{showPreview.body}</div>
+                  </div>
+                </div>
+                {showPreview.image && (
+                  <img 
+                    src={showPreview.image} 
+                    alt="" 
+                    className="w-full h-32 object-cover rounded-lg mt-3"
+                  />
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-4 text-center">
+                * ตัวอย่างอาจแตกต่างในแต่ละ Browser
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form Modal */}
       {showForm && (
@@ -253,7 +443,8 @@ export default function TemplatesPage() {
                 {Icons.close}
               </button>
             </div>
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="p-6 space-y-5">
+              {/* Template Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   ชื่อ Template <span className="text-red-500">*</span>
@@ -264,10 +455,16 @@ export default function TemplatesPage() {
                   value={form.name}
                   onChange={handleInputChange}
                   placeholder="เช่น: โปรโมชั่นประจำเดือน"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    form.name.trim() ? 'border-green-300 bg-green-50/30' : 'border-gray-300'
+                  }`}
                 />
+                <div className="flex justify-end mt-1">
+                  {form.name.trim() && <span className="text-xs text-green-600 flex items-center gap-1">{Icons.check} กรอกแล้ว</span>}
+                </div>
               </div>
 
+              {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   หัวข้อ <span className="text-red-500">*</span>
@@ -278,10 +475,18 @@ export default function TemplatesPage() {
                   value={form.title}
                   onChange={handleInputChange}
                   placeholder="กรอกหัวข้อข้อความ"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    form.title.trim() ? 'border-green-300 bg-green-50/30' : 'border-gray-300'
+                  }`}
+                  maxLength={100}
                 />
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-xs text-gray-500">{form.title.length}/100 ตัวอักษร</span>
+                  {form.title.trim() && <span className="text-xs text-green-600 flex items-center gap-1">{Icons.check} กรอกแล้ว</span>}
+                </div>
               </div>
 
+              {/* Body */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   ข้อความ <span className="text-red-500">*</span>
@@ -292,41 +497,80 @@ export default function TemplatesPage() {
                   onChange={handleInputChange}
                   placeholder="กรอกเนื้อหาข้อความ"
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none ${
+                    form.body.trim() ? 'border-green-300 bg-green-50/30' : 'border-gray-300'
+                  }`}
+                  maxLength={255}
                 />
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-xs text-gray-500">{form.body.length}/255 ตัวอักษร</span>
+                  {form.body.trim() && <span className="text-xs text-green-600 flex items-center gap-1">{Icons.check} กรอกแล้ว</span>}
+                </div>
               </div>
 
+              {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Icon URL <span className="text-gray-400 font-normal">(ไม่บังคับ)</span>
+                  รูปภาพใหญ่ <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="url"
-                  name="icon"
-                  value={form.icon}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/icon.png"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
+                
+                {form.image ? (
+                  <div className="relative">
+                    <img 
+                      src={form.image} 
+                      alt="Preview" 
+                      className="w-full h-40 object-cover rounded-lg border-2 border-green-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, image: '' }))}
+                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-lg"
+                      title="ลบรูปภาพ"
+                    >
+                      {Icons.x}
+                    </button>
+                    <div className="absolute bottom-2 left-2 px-3 py-1 bg-green-500 text-white text-xs rounded-full flex items-center gap-1">
+                      {Icons.check} อัพโหลดแล้ว
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => imageInputRef.current?.click()}
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-green-400 hover:bg-green-50/30 transition-all"
+                  >
+                    <input
+                      type="file"
+                      ref={imageInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    {uploadingImage ? (
+                      <div className="flex flex-col items-center gap-2">
+                        {Icons.spinner}
+                        <span className="text-gray-500">กำลังอัพโหลด...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                          {Icons.upload}
+                        </div>
+                        <p className="text-gray-600 font-medium">คลิกเพื่ออัพโหลดรูปภาพ</p>
+                        <p className="text-xs text-gray-400">รองรับ JPG, PNG, GIF</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
+              {/* URL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image URL <span className="text-gray-400 font-normal">(ไม่บังคับ)</span>
-                </label>
-                <input
-                  type="url"
-                  name="image"
-                  value={form.image}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL <span className="text-gray-400 font-normal">(ไม่บังคับ)</span>
+                  URL เมื่อคลิก <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="url"
@@ -334,11 +578,70 @@ export default function TemplatesPage() {
                   value={form.url}
                   onChange={handleInputChange}
                   placeholder="https://example.com/promo"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    form.url.trim() && isValidUrl(form.url.trim()) 
+                      ? 'border-green-300 bg-green-50/30' 
+                      : form.url.trim() && !isValidUrl(form.url.trim())
+                      ? 'border-red-300 bg-red-50/30'
+                      : 'border-gray-300'
+                  }`}
                 />
+                <div className="flex justify-end mt-1">
+                  {form.url.trim() && (
+                    isValidUrl(form.url.trim()) 
+                      ? <span className="text-xs text-green-600 flex items-center gap-1">{Icons.check} URL ถูกต้อง</span>
+                      : <span className="text-xs text-red-600 flex items-center gap-1">{Icons.xCircle} URL ไม่ถูกต้อง</span>
+                  )}
+                </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              {/* Preview in Form */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="text-sm font-medium text-gray-700 mb-3">ตัวอย่าง</div>
+                <div className="bg-gray-800 rounded-lg p-4 text-white">
+                  <div className="flex items-start gap-3">
+                    {pushSettings.sender_icon ? (
+                      <img src={pushSettings.sender_icon} alt="" className="w-10 h-10 rounded-lg bg-white object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                        {Icons.bell}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-gray-400">{pushSettings.sender_name}</div>
+                      <div className="font-medium text-sm truncate">{form.title || 'หัวข้อ'}</div>
+                      <div className="text-xs text-gray-300 mt-0.5 line-clamp-1">{form.body || 'ข้อความ'}</div>
+                    </div>
+                  </div>
+                  {form.image && (
+                    <img src={form.image} alt="" className="w-full h-20 object-cover rounded mt-2" />
+                  )}
+                </div>
+              </div>
+
+              {/* Validation Status */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="text-sm font-medium text-gray-700 mb-3">สถานะการกรอก</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'ชื่อ Template', valid: !!form.name.trim() },
+                    { label: 'หัวข้อ', valid: !!form.title.trim() },
+                    { label: 'ข้อความ', valid: !!form.body.trim() },
+                    { label: 'รูปภาพ', valid: !!form.image.trim() },
+                    { label: 'URL', valid: !!form.url.trim() && isValidUrl(form.url.trim()) },
+                  ].map((item, i) => (
+                    <div key={i} className={`flex items-center justify-between p-2 rounded ${item.valid ? 'bg-green-50' : 'bg-white'}`}>
+                      <span className="text-xs text-gray-600">{item.label}</span>
+                      {item.valid 
+                        ? <span className="text-green-600">{Icons.check}</span>
+                        : <span className="text-gray-300">{Icons.xCircle}</span>
+                      }
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
@@ -348,7 +651,7 @@ export default function TemplatesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={isSaving || !isFormValid}
                   className="flex-1 py-3 px-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all disabled:opacity-50 font-medium flex items-center justify-center gap-2"
                 >
                   {isSaving ? Icons.spinner : null}
@@ -364,11 +667,18 @@ export default function TemplatesPage() {
       {templates.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {templates.map((template) => (
-            <div key={template.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow card-hover">
-              <div className="p-6">
+            <div key={template.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="p-5">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="font-semibold text-gray-800">{template.name}</h3>
                   <div className="flex gap-1">
+                    <button
+                      onClick={() => setShowPreview(template)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
+                      title="ดูตัวอย่าง"
+                    >
+                      {Icons.eye}
+                    </button>
                     <button
                       onClick={() => openEditForm(template)}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
@@ -387,8 +697,22 @@ export default function TemplatesPage() {
                 </div>
 
                 <div className="bg-gray-800 rounded-lg p-4 text-white mb-4">
-                  <div className="font-medium text-sm truncate">{template.title}</div>
-                  <div className="text-xs text-gray-300 mt-1 line-clamp-2">{template.body}</div>
+                  <div className="flex items-start gap-3">
+                    {pushSettings.sender_icon ? (
+                      <img src={pushSettings.sender_icon} alt="" className="w-10 h-10 rounded bg-white object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 bg-green-500 rounded flex items-center justify-center flex-shrink-0">
+                        {Icons.bell}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{template.title}</div>
+                      <div className="text-xs text-gray-300 mt-1 line-clamp-2">{template.body}</div>
+                    </div>
+                  </div>
+                  {template.image && (
+                    <img src={template.image} alt="" className="w-full h-20 object-cover rounded mt-3" />
+                  )}
                 </div>
 
                 <div className="text-xs text-gray-400 mb-4">
@@ -397,7 +721,7 @@ export default function TemplatesPage() {
 
                 <a
                   href="/admin/send"
-                  className="w-full py-2.5 px-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium flex items-center justify-center gap-2"
                 >
                   {Icons.send}
                   <span>ใช้ส่ง Push</span>
