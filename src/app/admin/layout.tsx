@@ -68,6 +68,16 @@ const Icons = {
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
     </svg>
+  ),
+  usersCog: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m12.5-2.303a2.5 2.5 0 11-3.536 3.536 2.5 2.5 0 013.536-3.536z" />
+    </svg>
+  ),
+  shield: (
+    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+    </svg>
   )
 };
 
@@ -122,14 +132,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   const navItems = [
-    { href: '/admin/dashboard', icon: Icons.dashboard, label: 'Dashboard' },
-    { href: '/admin/send', icon: Icons.send, label: 'Send Message' },
-    { href: '/admin/templates', icon: Icons.template, label: 'Send Templates' },
-    { href: '/admin/subscribers', icon: Icons.users, label: 'subscribers' },
-    { href: '/admin/history', icon: Icons.history, label: 'Push History' },
-    { href: '/admin/page-settings', icon: Icons.palette, label: 'Page Design' },
-    { href: '/admin/settings', icon: Icons.settings, label: 'Settings' },
+    { href: '/admin/dashboard', icon: Icons.dashboard, label: 'Dashboard', superadminOnly: false },
+    { href: '/admin/send', icon: Icons.send, label: 'Send Message', superadminOnly: false },
+    { href: '/admin/templates', icon: Icons.template, label: 'Send Templates', superadminOnly: false },
+    { href: '/admin/subscribers', icon: Icons.users, label: 'subscribers', superadminOnly: false },
+    { href: '/admin/history', icon: Icons.history, label: 'Push History', superadminOnly: false },
+    { href: '/admin/page-settings', icon: Icons.palette, label: 'Page Design', superadminOnly: false },
+    { href: '/admin/manage-admins', icon: Icons.usersCog, label: 'Manage Admins', superadminOnly: true },
+    { href: '/admin/settings', icon: Icons.settings, label: 'Settings', superadminOnly: false },
   ];
+
+  // Filter nav items based on role
+  const filteredNavItems = navItems.filter(item => 
+    !item.superadminOnly || user?.role === 'superadmin'
+  );
 
   if (isLoading) {
     return (
@@ -196,7 +212,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <div className="font-medium text-gray-800 truncate">
                   {user?.displayName || user?.username}
                 </div>
-                <div className="text-xs text-gray-500">Administrator</div>
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  {user?.role === 'superadmin' ? (
+                    <>
+                      <span className="text-green-600">{Icons.shield}</span>
+                      <span className="text-green-600">Super Admin</span>
+                    </>
+                  ) : (
+                    <span>Administrator</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -204,7 +229,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {/* Navigation */}
           <nav className="flex-1 p-4 overflow-y-auto">
             <ul className="space-y-1">
-              {navItems.map((item) => {
+              {filteredNavItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                 return (
                   <li key={item.href}>

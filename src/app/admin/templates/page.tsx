@@ -181,9 +181,13 @@ export default function TemplatesPage() {
 
       if (data.success && data.data?.url) {
         setForm(prev => ({ ...prev, image: data.data.url }));
+        const sizeText = data.data.resized 
+          ? `ปรับขนาดเป็น ${data.data.width}x${data.data.height} แล้ว`
+          : `ขนาด ${data.data.width}x${data.data.height}`;
         Swal.fire({
           icon: 'success',
           title: 'อัพโหลดรูปภาพสำเร็จ',
+          text: sizeText,
           timer: 1500,
           showConfirmButton: false
         });
@@ -560,7 +564,8 @@ export default function TemplatesPage() {
                           {Icons.upload}
                         </div>
                         <p className="text-gray-600 font-medium">คลิกเพื่ออัพโหลดรูปภาพ</p>
-                        <p className="text-xs text-gray-400">รองรับ JPG, PNG, GIF</p>
+                        <p className="text-xs text-gray-400">รองรับ JPG, PNG, GIF (แนะนำขนาด 720x360 px)</p>
+                        <p className="text-xs text-gray-400">ระบบจะปรับขนาดเป็น 720x360 อัตโนมัติ</p>
                       </div>
                     )}
                   </div>

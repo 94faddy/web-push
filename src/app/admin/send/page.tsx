@@ -244,9 +244,13 @@ export default function SendPushPage() {
           });
         } else {
           setForm(prev => ({ ...prev, image: data.data.url }));
+          const sizeText = data.data.resized 
+            ? `ปรับขนาดเป็น ${data.data.width}x${data.data.height} แล้ว`
+            : `ขนาด ${data.data.width}x${data.data.height}`;
           Swal.fire({
             icon: 'success',
             title: 'อัพโหลดรูปภาพสำเร็จ',
+            text: sizeText,
             timer: 1500,
             showConfirmButton: false
           });
@@ -631,14 +635,14 @@ export default function SendPushPage() {
                           </div>
                           <div>
                             <p className="text-gray-600 font-medium">คลิกเพื่ออัพโหลดรูปภาพ</p>
-                            <p className="text-xs text-gray-400 mt-1">รองรับ JPG, PNG, GIF</p>
+                            <p className="text-xs text-gray-400 mt-1">รองรับ JPG, PNG, GIF (แนะนำขนาด 720x360 px)</p>
                           </div>
                         </div>
                       )}
                     </div>
                   )}
                   <p className="text-xs text-gray-500 mt-2">
-                    * รูปภาพจะแสดงใน Notification (รองรับเฉพาะ Chrome/Edge)
+                    * ระบบจะปรับขนาดรูปเป็น 720x360 (อัตราส่วน 2:1) อัตโนมัติ (เเสดงเฉพาะบน Chrome,Edge, เเละมือถือ android)
                   </p>
                 </div>
 

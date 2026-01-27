@@ -77,6 +77,7 @@ export interface Admin {
   id: number;
   username: string;
   password_hash: string;
+  role: 'superadmin' | 'admin';
   token: string;
   display_name?: string;
   email?: string;
@@ -203,6 +204,7 @@ export interface AuthUser {
   displayName: string | null;
   token: string;
   email: string | null;
+  role: 'superadmin' | 'admin';
 }
 
 // Template input types

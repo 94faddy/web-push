@@ -59,7 +59,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         username: admin.username,
         displayName: admin.display_name || null,
         token: admin.token,
-        email: admin.email || null
+        email: admin.email || null,
+        role: admin.role || 'admin'
       }
     });
 

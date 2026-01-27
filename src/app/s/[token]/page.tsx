@@ -166,6 +166,10 @@ export default function SubscribePage() {
   const [justSubscribed, setJustSubscribed] = useState(false);
   const [settings, setSettings] = useState<PageSettings>(defaultSettings);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [pushSettings, setPushSettings] = useState<{ sender_name: string; sender_icon: string | null }>({
+    sender_name: 'Web Push',
+    sender_icon: null
+  });
 
   // Fetch page settings
   useEffect(() => {
@@ -213,7 +217,9 @@ export default function SubscribePage() {
     setCurrentUrl(window.location.href);
     
     if (token && typeof document !== 'undefined') {
-      const manifestUrl = `/api/manifest/${token}`;
+      // Set manifest link with cache busting
+      const timestamp = Date.now();
+      const manifestUrl = `/api/manifest/${token}?_t=${timestamp}`;
       let link = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
       if (link) {
         link.href = manifestUrl;
@@ -223,6 +229,77 @@ export default function SubscribePage() {
         link.href = manifestUrl;
         document.head.appendChild(link);
       }
+      
+      // Fetch push settings for iOS meta tags
+      const fetchPushSettings = async () => {
+        try {
+          const response = await fetch(`/api/push-settings?token=${encodeURIComponent(token)}&_t=${timestamp}`, {
+            method: 'GET',
+            cache: 'no-store'
+          });
+          const data = await response.json();
+          
+          if (data.success && data.data) {
+            const senderName = data.data.sender_name || 'Web Push';
+            const senderIcon = data.data.sender_icon || null;
+            
+            setPushSettings({ sender_name: senderName, sender_icon: senderIcon });
+            
+            // Update document title
+            document.title = senderName;
+            
+            // Set/Update apple-mobile-web-app-title meta tag
+            let appleTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement;
+            if (appleTitleMeta) {
+              appleTitleMeta.content = senderName;
+            } else {
+              appleTitleMeta = document.createElement('meta');
+              appleTitleMeta.name = 'apple-mobile-web-app-title';
+              appleTitleMeta.content = senderName;
+              document.head.appendChild(appleTitleMeta);
+            }
+            
+            // Set/Update application-name meta tag
+            let appNameMeta = document.querySelector('meta[name="application-name"]') as HTMLMetaElement;
+            if (appNameMeta) {
+              appNameMeta.content = senderName;
+            } else {
+              appNameMeta = document.createElement('meta');
+              appNameMeta.name = 'application-name';
+              appNameMeta.content = senderName;
+              document.head.appendChild(appNameMeta);
+            }
+            
+            // Set apple-touch-icon if sender_icon exists
+            if (senderIcon) {
+              let appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement;
+              if (appleIcon) {
+                appleIcon.href = senderIcon;
+              } else {
+                appleIcon = document.createElement('link');
+                appleIcon.rel = 'apple-touch-icon';
+                appleIcon.href = senderIcon;
+                document.head.appendChild(appleIcon);
+              }
+              
+              // Also set apple-touch-icon-precomposed
+              let appleIconPre = document.querySelector('link[rel="apple-touch-icon-precomposed"]') as HTMLLinkElement;
+              if (appleIconPre) {
+                appleIconPre.href = senderIcon;
+              } else {
+                appleIconPre = document.createElement('link');
+                appleIconPre.rel = 'apple-touch-icon-precomposed';
+                appleIconPre.href = senderIcon;
+                document.head.appendChild(appleIconPre);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch push settings:', err);
+        }
+      };
+      
+      fetchPushSettings();
     }
   }, [token]);
 

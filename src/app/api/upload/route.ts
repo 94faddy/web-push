@@ -11,6 +11,8 @@ const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const ICON_SIZE = 192; // Recommended icon size for push notifications
+const BIG_IMAGE_WIDTH = 720; // Recommended width for push notification big image
+const BIG_IMAGE_HEIGHT = 360; // Recommended height for push notification big image (2:1 ratio)
 
 // Generate unique filename
 function generateFilename(originalName: string, suffix?: string): string {
@@ -26,13 +28,14 @@ async function resizeIcon(buffer: Buffer, mimeType: string): Promise<Buffer> {
   // Don't resize SVG
   if (mimeType === 'image/svg+xml') {
     // Convert SVG to PNG with fixed size
-    return await sharp(buffer)
+    const result = await sharp(buffer)
       .resize(ICON_SIZE, ICON_SIZE, {
         fit: 'contain',
         background: { r: 255, g: 255, b: 255, alpha: 0 }
       })
       .png()
       .toBuffer();
+    return Buffer.from(result);
   }
 
   // Resize other image types
@@ -42,17 +45,59 @@ async function resizeIcon(buffer: Buffer, mimeType: string): Promise<Buffer> {
   // Only resize if larger than target size
   if (metadata.width && metadata.height) {
     if (metadata.width > ICON_SIZE || metadata.height > ICON_SIZE) {
-      return await image
+      const result = await image
         .resize(ICON_SIZE, ICON_SIZE, {
           fit: 'contain',
           background: { r: 255, g: 255, b: 255, alpha: 0 }
         })
         .png()
         .toBuffer();
+      return Buffer.from(result);
     }
   }
   
   return buffer;
+}
+
+// Resize big image for push notification
+async function resizeBigImage(buffer: Buffer, mimeType: string): Promise<{ buffer: Buffer; width: number; height: number }> {
+  // Convert SVG to PNG first
+  if (mimeType === 'image/svg+xml') {
+    const resizedBuffer = await sharp(buffer)
+      .resize(BIG_IMAGE_WIDTH, BIG_IMAGE_HEIGHT, {
+        fit: 'cover',
+        position: 'center'
+      })
+      .png()
+      .toBuffer();
+    return { buffer: Buffer.from(resizedBuffer), width: BIG_IMAGE_WIDTH, height: BIG_IMAGE_HEIGHT };
+  }
+
+  const image = sharp(buffer);
+  const metadata = await image.metadata();
+  
+  // Resize if larger than target size
+  if (metadata.width && metadata.height) {
+    if (metadata.width > BIG_IMAGE_WIDTH || metadata.height > BIG_IMAGE_HEIGHT) {
+      // Determine output format based on input
+      let outputImage = image.resize(BIG_IMAGE_WIDTH, BIG_IMAGE_HEIGHT, {
+        fit: 'cover',
+        position: 'center'
+      });
+      
+      // Keep original format for jpg/png, convert others to png
+      if (mimeType === 'image/jpeg') {
+        outputImage = outputImage.jpeg({ quality: 85 });
+      } else {
+        outputImage = outputImage.png();
+      }
+      
+      const resizedBuffer = await outputImage.toBuffer();
+      return { buffer: Buffer.from(resizedBuffer), width: BIG_IMAGE_WIDTH, height: BIG_IMAGE_HEIGHT };
+    }
+  }
+  
+  return { buffer, width: metadata.width || 0, height: metadata.height || 0 };
 }
 
 // POST - Upload file
@@ -102,21 +147,43 @@ export async function POST(request: NextRequest) {
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer();
-    let buffer = Buffer.from(bytes);
+    let buffer: Buffer = Buffer.from(bytes) as Buffer;
 
     // Process based on type
     let filename = generateFilename(file.name, type || undefined);
+    let imageWidth: number | null = null;
+    let imageHeight: number | null = null;
+    let wasResized = false;
     
     if (type === 'icon' || type === 'pwa_icon') {
       // Resize icon to 192x192
       try {
-        buffer = await resizeIcon(buffer, file.type);
+        buffer = await resizeIcon(buffer, file.type) as Buffer;
+        wasResized = true;
+        imageWidth = ICON_SIZE;
+        imageHeight = ICON_SIZE;
         // Change extension to .png if was SVG
         if (file.type === 'image/svg+xml') {
           filename = filename.replace(/\.[^.]+$/, '.png');
         }
       } catch (resizeError) {
         console.error('Failed to resize icon:', resizeError);
+        // Continue with original buffer if resize fails
+      }
+    } else if (type === 'image') {
+      // Resize big image for push notification
+      try {
+        const result = await resizeBigImage(buffer, file.type);
+        buffer = result.buffer as Buffer;
+        imageWidth = result.width;
+        imageHeight = result.height;
+        wasResized = result.width === BIG_IMAGE_WIDTH && result.height === BIG_IMAGE_HEIGHT;
+        // Change extension to .png if was SVG
+        if (file.type === 'image/svg+xml') {
+          filename = filename.replace(/\.[^.]+$/, '.png');
+        }
+      } catch (resizeError) {
+        console.error('Failed to resize big image:', resizeError);
         // Continue with original buffer if resize fails
       }
     }
@@ -129,12 +196,15 @@ export async function POST(request: NextRequest) {
     // Return the URL
     const fileUrl = `/uploads/${filename}`;
 
-    return NextResponse.json<ApiResponse<{ url: string; filename: string; type: string | null }>>({
+    return NextResponse.json<ApiResponse<{ url: string; filename: string; type: string | null; width?: number; height?: number; resized?: boolean }>>({
       success: true,
       data: {
         url: fileUrl,
         filename: filename,
-        type: type
+        type: type,
+        width: imageWidth || undefined,
+        height: imageHeight || undefined,
+        resized: wasResized
       }
     });
 

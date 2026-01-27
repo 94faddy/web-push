@@ -12,20 +12,47 @@ interface PushSettings {
 }
 
 // GET - ดึงการตั้งค่าการส่ง
-export async function GET(): Promise<NextResponse<ApiResponse>> {
+export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
-    const admin = await getCurrentAdmin();
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get('token');
     
-    if (!admin) {
+    let adminId: number | null = null;
+    
+    // ถ้ามี token = public access (สำหรับ subscribe page)
+    if (token) {
+      const adminResult = await query<{ id: number }[]>(
+        'SELECT id FROM admins WHERE token = ?',
+        [token]
+      );
+      
+      if (adminResult.length > 0) {
+        adminId = adminResult[0].id;
+      }
+    } else {
+      // ถ้าไม่มี token = ต้อง login (admin access)
+      const admin = await getCurrentAdmin();
+      
+      if (!admin) {
+        return NextResponse.json({
+          success: false,
+          error: 'ไม่ได้เข้าสู่ระบบ'
+        }, { status: 401 });
+      }
+      
+      adminId = admin.id;
+    }
+    
+    if (!adminId) {
       return NextResponse.json({
         success: false,
-        error: 'ไม่ได้เข้าสู่ระบบ'
-      }, { status: 401 });
+        error: 'ไม่พบข้อมูล'
+      }, { status: 404 });
     }
 
     const settings = await query<PushSettings[]>(
       'SELECT * FROM push_settings WHERE admin_id = ?',
-      [admin.id]
+      [adminId]
     );
 
     if (settings.length === 0) {

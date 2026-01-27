@@ -20,7 +20,8 @@ export async function GET(): Promise<NextResponse<ApiResponse<AuthUser | null>>>
         username: admin.username,
         displayName: admin.display_name || null,
         token: admin.token,
-        email: admin.email || null
+        email: admin.email || null,
+        role: admin.role || 'admin'
       }
     });
 
