@@ -21,8 +21,52 @@ const ShareIcon = () => (
   </svg>
 );
 
-export default function IOSAddToHomeScreen() {
+// =====================================================
+// Settings Interface
+// =====================================================
+export interface IOSAddToHomeScreenSettings {
+  iconColor?: string;
+  icon?: string;
+  iconBg?: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  buttonHue?: number;
+  buttonSaturation?: number;
+  buttonLightness?: number;
+}
+
+const defaultSettings: Required<IOSAddToHomeScreenSettings> = {
+  icon: 'mdi:cellphone-arrow-down',
+  iconBg: 'linear-gradient(135deg, hsl(210, 85%, 88%) 0%, hsl(210, 75%, 78%) 100%)',
+  iconColor: '#ffffff',
+  title: 'เพิ่มไปยังหน้าจอโฮม',
+  subtitle: 'กดปุ่ม Share แล้วเลือก\n"เพิ่มไปยังหน้าจอโฮม"',
+  buttonText: '📖 วิธีทำ',
+  buttonHue: 142,
+  buttonSaturation: 71,
+  buttonLightness: 45
+};
+
+// Icon Display Helper - รองรับทั้ง emoji และ Iconify icons
+function IconDisplay({ icon, color, size = 40 }: { icon: string; color: string; size?: number }) {
+  if (!icon.includes(':')) return <span style={{ fontSize: size }}>{icon}</span>;
+  const encodedColor = encodeURIComponent(color);
+  return <img src={`https://api.iconify.design/${icon}.svg?color=${encodedColor}`} alt="" style={{ width: size, height: size }} />;
+}
+
+// =====================================================
+// Component Props
+// =====================================================
+interface IOSAddToHomeScreenProps {
+  settings?: IOSAddToHomeScreenSettings;
+}
+
+export default function IOSAddToHomeScreen({ settings }: IOSAddToHomeScreenProps) {
   const [showModal, setShowModal] = useState(false);
+  
+  // Merge settings with defaults
+  const s = { ...defaultSettings, ...settings };
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -31,7 +75,7 @@ export default function IOSAddToHomeScreen() {
         style={{ 
           width: '80px', 
           height: '80px', 
-          background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+          background: s.iconBg,
           borderRadius: '20px',
           display: 'flex',
           alignItems: 'center',
@@ -40,7 +84,7 @@ export default function IOSAddToHomeScreen() {
           color: 'white'
         }}
       >
-        <ShareIcon />
+        {s.icon === 'mdi:cellphone-arrow-down' ? <ShareIcon /> : <IconDisplay icon={s.icon} color={s.iconColor} />}
       </div>
 
       {/* Title */}
@@ -50,7 +94,7 @@ export default function IOSAddToHomeScreen() {
         color: '#1f2937', 
         marginBottom: '8px' 
       }}>
-        เพิ่มไปยังหน้าจอโฮม
+        {s.title}
       </h2>
       
       <p style={{ 
@@ -58,9 +102,9 @@ export default function IOSAddToHomeScreen() {
         marginBottom: '24px', 
         fontSize: '14px',
         lineHeight: '1.5'
-      }}>
-        กดปุ่ม Share แล้วเลือก<br/>&quot;เพิ่มไปยังหน้าจอโฮม&quot;
-      </p>
+      }}
+        dangerouslySetInnerHTML={{ __html: s.subtitle.replace(/\n/g, '<br/>') }}
+      />
 
       {/* ปุ่มดูวิธีทำ */}
       <button
@@ -68,22 +112,21 @@ export default function IOSAddToHomeScreen() {
         style={{
           width: '100%',
           padding: '14px 24px',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          background: `linear-gradient(135deg, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%) 0%, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness - 10}%) 100%)`,
           color: 'white',
           fontWeight: '600',
           borderRadius: '12px',
           border: 'none',
           cursor: 'pointer',
           fontSize: '16px',
-          boxShadow: '0 4px 14px rgba(59,130,246,0.4)',
+          boxShadow: `0 4px 14px hsla(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%, 0.4)`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '8px'
         }}
       >
-        <ShareIcon />
-        ดูวิธีทำ
+        <span dangerouslySetInnerHTML={{ __html: s.buttonText }} />
       </button>
 
       {/* Modal วิธีทำ */}

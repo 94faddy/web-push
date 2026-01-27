@@ -4,15 +4,58 @@ import { useState } from 'react';
 import InstructionModal from './InstructionModal';
 import type { BrowserInfo } from '@/hooks/usePushNotification';
 
+// Settings interface for customization
+export interface SubscribeFormSettings {
+  icon?: string;
+  iconBg?: string;
+  iconColor?: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  loadingText?: string;
+  buttonHue?: number;
+  buttonSaturation?: number;
+  buttonLightness?: number;
+}
+
 interface SubscribeFormProps {
   onSubscribe: () => void;
   isLoading: boolean;
   browserInfo: BrowserInfo;
+  settings?: SubscribeFormSettings;
 }
 
-export default function SubscribeForm({ onSubscribe, isLoading, browserInfo }: SubscribeFormProps) {
+// Default settings
+const defaultSettings: Required<SubscribeFormSettings> = {
+  icon: 'mdi:bell',
+  iconBg: 'linear-gradient(135deg, hsl(45, 85%, 88%) 0%, hsl(45, 75%, 78%) 100%)',
+  iconColor: '#f59e0b',
+  title: 'รับการแจ้งเตือน',
+  subtitle: 'สมัครรับการแจ้งเตือนเพื่อไม่พลาดข่าวสาร',
+  buttonText: '🔔 สมัครรับการแจ้งเตือน',
+  loadingText: '⏳ กำลังดำเนินการ...',
+  buttonHue: 142,
+  buttonSaturation: 71,
+  buttonLightness: 45,
+};
+
+// Icon Display Helper
+function IconDisplay({ icon, color, size = 40 }: { icon: string; color: string; size?: number }) {
+  if (!icon.includes(':')) return <span style={{ fontSize: size }}>{icon}</span>;
+  const encodedColor = encodeURIComponent(color);
+  return <img src={`https://api.iconify.design/${icon}.svg?color=${encodedColor}`} alt="" style={{ width: size, height: size }} />;
+}
+
+export default function SubscribeForm({ onSubscribe, isLoading, browserInfo, settings }: SubscribeFormProps) {
   const [showBraveModal, setShowBraveModal] = useState(false);
   const [showEdgeModal, setShowEdgeModal] = useState(false);
+
+  // Merge settings with defaults
+  const s = { ...defaultSettings, ...settings };
+
+  // Generate button gradient from HSL
+  const buttonGradient = `linear-gradient(135deg, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%) 0%, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness - 10}%) 100%)`;
+  const buttonShadow = `0 4px 14px hsla(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%, 0.4)`;
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -21,17 +64,16 @@ export default function SubscribeForm({ onSubscribe, isLoading, browserInfo }: S
         style={{ 
           width: '80px', 
           height: '80px', 
-          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          background: s.iconBg,
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           margin: '0 auto 20px',
-          fontSize: '40px',
           animation: 'bellShake 2s ease-in-out infinite'
         }}
       >
-        🔔
+        <IconDisplay icon={s.icon} color={s.iconColor} />
       </div>
 
       {/* Title */}
@@ -41,7 +83,7 @@ export default function SubscribeForm({ onSubscribe, isLoading, browserInfo }: S
         color: '#1f2937', 
         marginBottom: '8px' 
       }}>
-        รับการแจ้งเตือน
+        {s.title}
       </h2>
       
       <p style={{ 
@@ -49,9 +91,9 @@ export default function SubscribeForm({ onSubscribe, isLoading, browserInfo }: S
         marginBottom: '24px', 
         fontSize: '14px',
         lineHeight: '1.5'
-      }}>
-        สมัครรับการแจ้งเตือนเพื่อไม่พลาดข่าวสาร
-      </p>
+      }}
+        dangerouslySetInnerHTML={{ __html: s.subtitle.replace(/\n/g, '<br/>') }}
+      />
 
       {/* Subscribe Button */}
       <button
@@ -62,14 +104,14 @@ export default function SubscribeForm({ onSubscribe, isLoading, browserInfo }: S
           padding: '14px 24px',
           background: isLoading 
             ? '#9ca3af' 
-            : 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+            : buttonGradient,
           color: 'white',
           fontWeight: '600',
           borderRadius: '12px',
           border: 'none',
           cursor: isLoading ? 'not-allowed' : 'pointer',
           fontSize: '16px',
-          boxShadow: isLoading ? 'none' : '0 4px 14px rgba(34,197,94,0.4)',
+          boxShadow: isLoading ? 'none' : buttonShadow,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -79,14 +121,9 @@ export default function SubscribeForm({ onSubscribe, isLoading, browserInfo }: S
         }}
       >
         {isLoading ? (
-          <>
-            <span style={{ animation: 'spin 1s linear infinite' }}>⏳</span>
-            กำลังดำเนินการ...
-          </>
+          <span dangerouslySetInnerHTML={{ __html: s.loadingText }} />
         ) : (
-          <>
-            🔔 สมัครรับการแจ้งเตือน
-          </>
+          <span dangerouslySetInnerHTML={{ __html: s.buttonText }} />
         )}
       </button>
 

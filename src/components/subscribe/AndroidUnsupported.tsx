@@ -2,14 +2,61 @@
 
 import { useState, useEffect } from 'react';
 
-interface AndroidUnsupportedProps {
-  currentUrl: string;
+// =====================================================
+// Settings Interface
+// =====================================================
+export interface AndroidUnsupportedSettings {
+  iconColor?: string;
+  icon?: string;
+  iconBg?: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  loadingText?: string;
+  copySuccess?: string;
+  copyHint?: string;
+  buttonHue?: number;
+  buttonSaturation?: number;
+  buttonLightness?: number;
 }
 
-export default function AndroidUnsupported({ currentUrl }: AndroidUnsupportedProps) {
+const defaultSettings: Required<AndroidUnsupportedSettings> = {
+  icon: 'mdi:alert',
+  iconBg: 'linear-gradient(135deg, hsl(45, 85%, 88%) 0%, hsl(45, 75%, 78%) 100%)',
+  iconColor: '#f59e0b',
+  title: 'Browser ไม่รองรับ',
+  subtitle: 'กรุณาเปิดใน Browser ที่รองรับ\nเพื่อสมัครรับการแจ้งเตือน',
+  buttonText: '🚀 เปิด Browser ที่รองรับ',
+  loadingText: '⏳ กำลังเปิด...',
+  copySuccess: 'คัดลอกลิงก์แล้ว!',
+  copyHint: 'เปิดใน Chrome แล้ววางลิงก์',
+  buttonHue: 142,
+  buttonSaturation: 71,
+  buttonLightness: 45
+};
+
+// Icon Display Helper - รองรับทั้ง emoji และ Iconify icons
+function IconDisplay({ icon, color, size = 40 }: { icon: string; color: string; size?: number }) {
+  if (!icon.includes(':')) return <span style={{ fontSize: size }}>{icon}</span>;
+  const encodedColor = encodeURIComponent(color);
+  return <img src={`https://api.iconify.design/${icon}.svg?color=${encodedColor}`} alt="" style={{ width: size, height: size }} />;
+}
+
+// =====================================================
+// Component Props
+// =====================================================
+interface AndroidUnsupportedProps {
+  currentUrl: string;
+  settings?: AndroidUnsupportedSettings;
+}
+
+export default function AndroidUnsupported({ currentUrl, settings }: AndroidUnsupportedProps) {
   const [isOpening, setIsOpening] = useState(false);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [inAppName, setInAppName] = useState<string>('');
+  
+  // Merge settings with defaults
+  const s = { ...defaultSettings, ...settings };
 
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
@@ -151,16 +198,15 @@ export default function AndroidUnsupported({ currentUrl }: AndroidUnsupportedPro
         style={{ 
           width: '80px', 
           height: '80px', 
-          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          background: s.iconBg,
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '0 auto 20px',
-          fontSize: '40px'
+          margin: '0 auto 20px'
         }}
       >
-        ⚠️
+        <IconDisplay icon={s.icon} color={s.iconColor} />
       </div>
 
       {/* Title */}
@@ -170,7 +216,7 @@ export default function AndroidUnsupported({ currentUrl }: AndroidUnsupportedPro
         color: '#1f2937', 
         marginBottom: '8px' 
       }}>
-        Browser ไม่รองรับ
+        {s.title}
       </h2>
       
       <p style={{ 
@@ -178,9 +224,9 @@ export default function AndroidUnsupported({ currentUrl }: AndroidUnsupportedPro
         marginBottom: '24px', 
         fontSize: '14px',
         lineHeight: '1.5'
-      }}>
-        กรุณาเปิดใน Browser ที่รองรับ<br/>เพื่อสมัครรับการแจ้งเตือน
-      </p>
+      }}
+        dangerouslySetInnerHTML={{ __html: s.subtitle.replace(/\n/g, '<br/>') }}
+      />
 
       {/* แสดง success message หลัง copy */}
       {showCopySuccess ? (
@@ -197,14 +243,14 @@ export default function AndroidUnsupported({ currentUrl }: AndroidUnsupportedPro
             color: '#166534',
             marginBottom: '4px'
           }}>
-            คัดลอกลิงก์แล้ว!
+            {s.copySuccess}
           </p>
           <p style={{ 
             fontSize: '14px', 
             color: '#15803d',
             margin: 0
           }}>
-            เปิดใน Chrome แล้ววางลิงก์
+            {s.copyHint}
           </p>
         </div>
       ) : (
@@ -216,14 +262,14 @@ export default function AndroidUnsupported({ currentUrl }: AndroidUnsupportedPro
             padding: '16px 24px',
             background: isOpening 
               ? '#9ca3af'
-              : 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+              : `linear-gradient(135deg, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%) 0%, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness - 10}%) 100%)`,
             color: 'white',
             fontWeight: '600',
             borderRadius: '12px',
             border: 'none',
             cursor: isOpening ? 'not-allowed' : 'pointer',
             fontSize: '16px',
-            boxShadow: isOpening ? 'none' : '0 4px 14px rgba(34,197,94,0.4)',
+            boxShadow: isOpening ? 'none' : `0 4px 14px hsla(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%, 0.4)`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -232,17 +278,9 @@ export default function AndroidUnsupported({ currentUrl }: AndroidUnsupportedPro
           }}
         >
           {isOpening ? (
-            <>
-              <span style={{ 
-                display: 'inline-block',
-                animation: 'spin 1s linear infinite' 
-              }}>⏳</span>
-              กำลังเปิด...
-            </>
+            <span dangerouslySetInnerHTML={{ __html: s.loadingText }} />
           ) : (
-            <>
-              🚀 เปิด Browser ที่รองรับ
-            </>
+            <span dangerouslySetInnerHTML={{ __html: s.buttonText }} />
           )}
         </button>
       )}

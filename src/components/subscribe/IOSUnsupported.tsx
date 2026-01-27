@@ -2,14 +2,59 @@
 
 import { useState, useEffect } from 'react';
 
-interface IOSUnsupportedProps {
-  currentUrl: string;
+// =====================================================
+// Settings Interface
+// =====================================================
+export interface IOSUnsupportedSettings {
+  iconColor?: string;
+  icon?: string;
+  iconBg?: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  copySuccess?: string;
+  copyHint?: string;
+  buttonHue?: number;
+  buttonSaturation?: number;
+  buttonLightness?: number;
 }
 
-export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
+const defaultSettings: Required<IOSUnsupportedSettings> = {
+  icon: 'mdi:apple-safari',
+  iconBg: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+  iconColor: '#3b82f6',
+  title: 'กรุณาเปิดใน Safari',
+  subtitle: 'Push Notification รองรับเฉพาะ Safari\nเปิดลิงก์นี้ใน Safari เพื่อดำเนินการต่อ',
+  buttonText: '🧭 เปิดใน Safari',
+  copySuccess: 'คัดลอกลิงก์แล้ว!',
+  copyHint: 'เปิด Safari แล้ววางลิงก์',
+  buttonHue: 142,
+  buttonSaturation: 71,
+  buttonLightness: 45
+};
+
+// Icon Display Helper - รองรับทั้ง emoji และ Iconify icons
+function IconDisplay({ icon, color, size = 40 }: { icon: string; color: string; size?: number }) {
+  if (!icon.includes(':')) return <span style={{ fontSize: size }}>{icon}</span>;
+  const encodedColor = encodeURIComponent(color);
+  return <img src={`https://api.iconify.design/${icon}.svg?color=${encodedColor}`} alt="" style={{ width: size, height: size }} />;
+}
+
+// =====================================================
+// Component Props
+// =====================================================
+interface IOSUnsupportedProps {
+  currentUrl: string;
+  settings?: IOSUnsupportedSettings;
+}
+
+export default function IOSUnsupported({ currentUrl, settings }: IOSUnsupportedProps) {
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [inAppName, setInAppName] = useState<string>('');
+  
+  // Merge settings with defaults
+  const s = { ...defaultSettings, ...settings };
 
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
@@ -122,16 +167,15 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
           style={{ 
             width: '80px', 
             height: '80px', 
-            background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+            background: s.iconBg,
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 20px',
-            fontSize: '40px'
+            margin: '0 auto 20px'
           }}
         >
-          🧭
+          <IconDisplay icon={s.icon} color={s.iconColor} />
         </div>
 
         {/* Title */}
@@ -141,7 +185,7 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
           color: '#1f2937', 
           marginBottom: '8px' 
         }}>
-          กรุณาเปิดใน Safari
+          {s.title}
         </h2>
         
         <p style={{ 
@@ -149,9 +193,9 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
           marginBottom: '24px', 
           fontSize: '14px',
           lineHeight: '1.5'
-        }}>
-          iOS รองรับ Push Notification<br/>เฉพาะใน Safari เท่านั้น
-        </p>
+        }}
+          dangerouslySetInnerHTML={{ __html: s.subtitle.replace(/\n/g, '<br/>') }}
+        />
 
         {/* ปุ่ม วิธีทำ */}
         <button
@@ -159,14 +203,14 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
           style={{
             width: '100%',
             padding: '16px 24px',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            background: `linear-gradient(135deg, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%) 0%, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness - 10}%) 100%)`,
             color: 'white',
             fontWeight: '600',
             borderRadius: '12px',
             border: 'none',
             cursor: 'pointer',
             fontSize: '16px',
-            boxShadow: '0 4px 14px rgba(59,130,246,0.4)',
+            boxShadow: `0 4px 14px hsla(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%, 0.4)`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -379,7 +423,7 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
                 style={{
                   width: '100%',
                   padding: '14px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  background: `linear-gradient(135deg, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%) 0%, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness - 10}%) 100%)`,
                   color: 'white',
                   fontWeight: '600',
                   borderRadius: '10px',
@@ -412,16 +456,15 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
           style={{ 
             width: '80px', 
             height: '80px', 
-            background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+            background: s.iconBg,
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 20px',
-            fontSize: '40px'
+            margin: '0 auto 20px'
           }}
         >
-          🧭
+          <IconDisplay icon={s.icon} color={s.iconColor} />
         </div>
 
         <h2 style={{ 
@@ -430,7 +473,7 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
           color: '#1f2937', 
           marginBottom: '8px' 
         }}>
-          กรุณาเปิดใน Safari
+          {s.title}
         </h2>
         
         <p style={{ 
@@ -438,30 +481,30 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
           marginBottom: '24px', 
           fontSize: '14px',
           lineHeight: '1.5'
-        }}>
-          iOS รองรับ Push Notification<br/>เฉพาะใน Safari เท่านั้น
-        </p>
+        }}
+          dangerouslySetInnerHTML={{ __html: s.subtitle.replace(/\n/g, '<br/>') }}
+        />
 
         <button
           onClick={openInSafariForLINE}
           style={{
             width: '100%',
             padding: '16px 24px',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            background: `linear-gradient(135deg, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%) 0%, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness - 10}%) 100%)`,
             color: 'white',
             fontWeight: '600',
             borderRadius: '12px',
             border: 'none',
             cursor: 'pointer',
             fontSize: '16px',
-            boxShadow: '0 4px 14px rgba(59,130,246,0.4)',
+            boxShadow: `0 4px 14px hsla(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%, 0.4)`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px'
           }}
         >
-          🧭 เปิดใน Safari
+          <span dangerouslySetInnerHTML={{ __html: s.buttonText }} />
         </button>
       </div>
     );
@@ -474,16 +517,15 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
         style={{ 
           width: '80px', 
           height: '80px', 
-          background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+          background: s.iconBg,
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '0 auto 20px',
-          fontSize: '40px'
+          margin: '0 auto 20px'
         }}
       >
-        🧭
+        <IconDisplay icon={s.icon} color={s.iconColor} />
       </div>
 
       <h2 style={{ 
@@ -492,7 +534,7 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
         color: '#1f2937', 
         marginBottom: '8px' 
       }}>
-        กรุณาเปิดใน Safari
+        {s.title}
       </h2>
       
       <p style={{ 
@@ -500,9 +542,9 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
         marginBottom: '24px', 
         fontSize: '14px',
         lineHeight: '1.5'
-      }}>
-        iOS รองรับ Push Notification<br/>เฉพาะใน Safari เท่านั้น
-      </p>
+      }}
+        dangerouslySetInnerHTML={{ __html: s.subtitle.replace(/\n/g, '<br/>') }}
+      />
 
       {showCopySuccess ? (
         <div style={{
@@ -518,14 +560,14 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
             color: '#166534',
             marginBottom: '4px'
           }}>
-            คัดลอกลิงก์แล้ว!
+            {s.copySuccess}
           </p>
           <p style={{ 
             fontSize: '14px', 
             color: '#15803d',
             margin: 0
           }}>
-            เปิด Safari แล้ววางลิงก์
+            {s.copyHint}
           </p>
         </div>
       ) : (
@@ -556,14 +598,14 @@ export default function IOSUnsupported({ currentUrl }: IOSUnsupportedProps) {
             style={{
               width: '100%',
               padding: '16px 24px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              background: `linear-gradient(135deg, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%) 0%, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness - 10}%) 100%)`,
               color: 'white',
               fontWeight: '600',
               borderRadius: '12px',
               border: 'none',
               cursor: 'pointer',
               fontSize: '16px',
-              boxShadow: '0 4px 14px rgba(59,130,246,0.4)',
+              boxShadow: `0 4px 14px hsla(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%, 0.4)`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

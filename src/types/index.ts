@@ -212,6 +212,93 @@ export interface PageSettings {
   page_title: string;
   page_subtitle: string;
   
+  // =====================================================
+  // SUBSCRIBE FORM PAGE
+  // =====================================================
+  subscribe_icon: string;
+  subscribe_icon_bg: string;
+  subscribe_title: string;
+  subscribe_subtitle: string;
+  subscribe_button_text: string;
+  subscribe_loading_text: string;
+  
+  // =====================================================
+  // SUCCESS PAGE
+  // =====================================================
+  success_icon: string;
+  success_icon_bg: string;
+  success_title: string;
+  success_title_existing: string;
+  success_subtitle: string;
+  success_box_icon: string;
+  success_box_title: string;
+  success_box_subtitle: string;
+  
+  // =====================================================
+  // BLOCKED/DENIED PAGE
+  // =====================================================
+  blocked_icon: string;
+  blocked_icon_bg: string;
+  blocked_title: string;
+  blocked_subtitle: string;
+  blocked_button_text: string;
+  blocked_tip_icon: string;
+  blocked_tip_text: string;
+  
+  // =====================================================
+  // iOS SAFARI ADD TO HOME SCREEN
+  // =====================================================
+  ios_safari_icon: string;
+  ios_safari_icon_bg: string;
+  ios_safari_title: string;
+  ios_safari_subtitle: string;
+  ios_safari_button_text: string;
+  
+  // =====================================================
+  // iOS CHROME ADD TO HOME SCREEN
+  // =====================================================
+  ios_chrome_icon: string;
+  ios_chrome_icon_bg: string;
+  ios_chrome_title: string;
+  ios_chrome_subtitle: string;
+  ios_chrome_button_text: string;
+  
+  // =====================================================
+  // iOS UNSUPPORTED (in-app browser)
+  // =====================================================
+  ios_unsupported_icon: string;
+  ios_unsupported_icon_bg: string;
+  ios_unsupported_title: string;
+  ios_unsupported_subtitle: string;
+  ios_unsupported_button_text: string;
+  ios_unsupported_button_telegram: string;
+  ios_unsupported_button_copy: string;
+  ios_unsupported_copy_success: string;
+  ios_unsupported_copy_hint: string;
+  
+  // =====================================================
+  // ANDROID UNSUPPORTED (in-app browser)
+  // =====================================================
+  android_unsupported_icon: string;
+  android_unsupported_icon_bg: string;
+  android_unsupported_title: string;
+  android_unsupported_subtitle: string;
+  android_unsupported_button_text: string;
+  android_unsupported_loading_text: string;
+  android_unsupported_copy_success: string;
+  android_unsupported_copy_hint: string;
+  
+  // =====================================================
+  // FOOTER SETTINGS
+  // =====================================================
+  footer_title: string;
+  footer_item1_icon: string;
+  footer_item1_text: string;
+  footer_item2_icon: string;
+  footer_item2_text: string;
+  footer_item3_icon: string;
+  footer_item3_text: string;
+  
   created_at: Date;
   updated_at: Date;
 }
@@ -235,4 +322,75 @@ export interface PageSettingsInput {
   logo_width?: number;
   page_title?: string;
   page_subtitle?: string;
+  
+  // Subscribe Form
+  subscribe_icon?: string;
+  subscribe_icon_bg?: string;
+  subscribe_title?: string;
+  subscribe_subtitle?: string;
+  subscribe_button_text?: string;
+  subscribe_loading_text?: string;
+  
+  // Success Page
+  success_icon?: string;
+  success_icon_bg?: string;
+  success_title?: string;
+  success_title_existing?: string;
+  success_subtitle?: string;
+  success_box_icon?: string;
+  success_box_title?: string;
+  success_box_subtitle?: string;
+  
+  // Blocked Page
+  blocked_icon?: string;
+  blocked_icon_bg?: string;
+  blocked_title?: string;
+  blocked_subtitle?: string;
+  blocked_button_text?: string;
+  blocked_tip_icon?: string;
+  blocked_tip_text?: string;
+  
+  // iOS Safari
+  ios_safari_icon?: string;
+  ios_safari_icon_bg?: string;
+  ios_safari_title?: string;
+  ios_safari_subtitle?: string;
+  ios_safari_button_text?: string;
+  
+  // iOS Chrome
+  ios_chrome_icon?: string;
+  ios_chrome_icon_bg?: string;
+  ios_chrome_title?: string;
+  ios_chrome_subtitle?: string;
+  ios_chrome_button_text?: string;
+  
+  // iOS Unsupported
+  ios_unsupported_icon?: string;
+  ios_unsupported_icon_bg?: string;
+  ios_unsupported_title?: string;
+  ios_unsupported_subtitle?: string;
+  ios_unsupported_button_text?: string;
+  ios_unsupported_button_telegram?: string;
+  ios_unsupported_button_copy?: string;
+  ios_unsupported_copy_success?: string;
+  ios_unsupported_copy_hint?: string;
+  
+  // Android Unsupported
+  android_unsupported_icon?: string;
+  android_unsupported_icon_bg?: string;
+  android_unsupported_title?: string;
+  android_unsupported_subtitle?: string;
+  android_unsupported_button_text?: string;
+  android_unsupported_loading_text?: string;
+  android_unsupported_copy_success?: string;
+  android_unsupported_copy_hint?: string;
+  
+  // Footer
+  footer_title?: string;
+  footer_item1_icon?: string;
+  footer_item1_text?: string;
+  footer_item2_icon?: string;
+  footer_item2_text?: string;
+  footer_item3_icon?: string;
+  footer_item3_text?: string;
 }

@@ -4,12 +4,59 @@ import { useState } from 'react';
 import InstructionModal from './InstructionModal';
 import type { BrowserInfo } from '@/hooks/usePushNotification';
 
-interface PermissionDeniedProps {
-  browserInfo: BrowserInfo;
+// =====================================================
+// Settings Interface
+// =====================================================
+export interface PermissionDeniedSettings {
+  iconColor?: string;
+  tipIconColor?: string;
+  icon?: string;
+  iconBg?: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  tipIcon?: string;
+  tipText?: string;
+  buttonHue?: number;
+  buttonSaturation?: number;
+  buttonLightness?: number;
 }
 
-export default function PermissionDenied({ browserInfo }: PermissionDeniedProps) {
+const defaultSettings: Required<PermissionDeniedSettings> = {
+  icon: 'mdi:bell-off',
+  iconBg: 'linear-gradient(135deg, #fecaca 0%, #fca5a5 100%)',
+  iconColor: '#dc2626',
+  tipIconColor: '#ca8a04',
+  title: 'การแจ้งเตือนถูกบล็อก',
+  subtitle: 'กรุณาเปิดใช้งานในการตั้งค่าเบราว์เซอร์',
+  buttonText: '⚙️ วิธีตั้งค่า',
+  tipIcon: 'mdi:lightbulb',
+  tipText: 'หลังจากเปิดใช้งานแล้ว กรุณารีเฟรชหน้านี้เพื่อสมัครรับการแจ้งเตือน',
+  buttonHue: 142,
+  buttonSaturation: 71,
+  buttonLightness: 45
+};
+
+// Icon Display Helper - รองรับทั้ง emoji และ Iconify icons
+function IconDisplay({ icon, color, size = 40 }: { icon: string; color: string; size?: number }) {
+  if (!icon.includes(':')) return <span style={{ fontSize: size }}>{icon}</span>;
+  const encodedColor = encodeURIComponent(color);
+  return <img src={`https://api.iconify.design/${icon}.svg?color=${encodedColor}`} alt="" style={{ width: size, height: size }} />;
+}
+
+// =====================================================
+// Component Props
+// =====================================================
+interface PermissionDeniedProps {
+  browserInfo: BrowserInfo;
+  settings?: PermissionDeniedSettings;
+}
+
+export default function PermissionDenied({ browserInfo, settings }: PermissionDeniedProps) {
   const [showModal, setShowModal] = useState(false);
+  
+  // Merge settings with defaults
+  const s = { ...defaultSettings, ...settings };
 
   // เนื้อหา modal ตาม browser
   const getInstructions = () => {
@@ -224,16 +271,15 @@ export default function PermissionDenied({ browserInfo }: PermissionDeniedProps)
         style={{ 
           width: '80px', 
           height: '80px', 
-          background: 'linear-gradient(135deg, #fecaca 0%, #fca5a5 100%)',
+          background: s.iconBg,
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '0 auto 20px',
-          fontSize: '40px'
+          margin: '0 auto 20px'
         }}
       >
-        🚫
+        <IconDisplay icon={s.icon} color={s.iconColor} />
       </div>
 
       {/* Title */}
@@ -243,7 +289,7 @@ export default function PermissionDenied({ browserInfo }: PermissionDeniedProps)
         color: '#1f2937', 
         marginBottom: '8px' 
       }}>
-        การแจ้งเตือนถูกบล็อก
+        {s.title}
       </h2>
       
       <p style={{ 
@@ -251,9 +297,9 @@ export default function PermissionDenied({ browserInfo }: PermissionDeniedProps)
         marginBottom: '24px', 
         fontSize: '14px',
         lineHeight: '1.5'
-      }}>
-        กรุณาเปิดใช้งานในการตั้งค่าเบราว์เซอร์
-      </p>
+      }}
+        dangerouslySetInnerHTML={{ __html: s.subtitle.replace(/\n/g, '<br/>') }}
+      />
 
       {/* ปุ่มดูวิธีตั้งค่า */}
       <button
@@ -261,14 +307,14 @@ export default function PermissionDenied({ browserInfo }: PermissionDeniedProps)
         style={{
           width: '100%',
           padding: '14px 24px',
-          background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+          background: `linear-gradient(135deg, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%) 0%, hsl(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness - 10}%) 100%)`,
           color: 'white',
           fontWeight: '600',
           borderRadius: '12px',
           border: 'none',
           cursor: 'pointer',
           fontSize: '16px',
-          boxShadow: '0 4px 14px rgba(239,68,68,0.4)',
+          boxShadow: `0 4px 14px hsla(${s.buttonHue}, ${s.buttonSaturation}%, ${s.buttonLightness}%, 0.4)`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -276,7 +322,7 @@ export default function PermissionDenied({ browserInfo }: PermissionDeniedProps)
           marginBottom: '16px'
         }}
       >
-        ⚙️ วิธีตั้งค่า
+        {s.buttonText}
       </button>
 
       {/* Quick Info */}
@@ -294,9 +340,9 @@ export default function PermissionDenied({ browserInfo }: PermissionDeniedProps)
           alignItems: 'flex-start',
           gap: '8px'
         }}>
-          <span>💡</span>
+          <span style={{ flexShrink: 0 }}><IconDisplay icon={s.tipIcon} color={s.tipIconColor} size={18} /></span>
           <span>
-            หลังจากเปิดใช้งานแล้ว กรุณารีเฟรชหน้านี้เพื่อสมัครรับการแจ้งเตือน
+            {s.tipText}
           </span>
         </p>
       </div>

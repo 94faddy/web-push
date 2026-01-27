@@ -609,7 +609,7 @@ export function usePushNotification(adminToken?: string): UsePushNotificationRet
     platform: 'desktop'
   });
 
-  const needsInstall = isIOS && !isStandalone && (browserInfo.isIOSSafari || browserInfo.isIOSChrome);
+  const needsInstall = Boolean(isIOS && !isStandalone && (browserInfo.isIOSSafari || browserInfo.isIOSChrome));
 
   useEffect(() => {
     const init = async () => {
@@ -669,7 +669,7 @@ export function usePushNotification(adminToken?: string): UsePushNotificationRet
         return;
       }
       
-      let perm = Notification.permission;
+      let perm: NotificationPermission = Notification.permission;
       if (perm !== 'granted') {
         perm = await Notification.requestPermission();
       }

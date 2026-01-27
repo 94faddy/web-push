@@ -124,7 +124,34 @@ export async function PUT(request: NextRequest) {
       'bg_gradient_hue2', 'bg_gradient_saturation2', 'bg_gradient_lightness2', 'bg_gradient_angle',
       'bg_image_url', 'bg_image_overlay', 'bg_image_overlay_opacity',
       'logo_url', 'logo_width',
-      'page_title', 'page_subtitle'
+      'page_title', 'page_subtitle',
+      // Subscribe Form
+      'subscribe_icon', 'subscribe_icon_bg', 'subscribe_icon_color', 'subscribe_title', 'subscribe_subtitle',
+      'subscribe_button_text', 'subscribe_loading_text',
+      // Success Page
+      'success_icon', 'success_icon_bg', 'success_icon_color', 'success_title', 'success_title_existing',
+      'success_subtitle', 'success_box_icon', 'success_box_icon_color', 'success_box_title', 'success_box_subtitle',
+      // Blocked Page
+      'blocked_icon', 'blocked_icon_bg', 'blocked_icon_color', 'blocked_title', 'blocked_subtitle',
+      'blocked_button_text', 'blocked_tip_icon', 'blocked_tip_icon_color', 'blocked_tip_text',
+      // iOS Safari
+      'ios_safari_icon', 'ios_safari_icon_bg', 'ios_safari_icon_color', 'ios_safari_title', 'ios_safari_subtitle',
+      'ios_safari_button_text',
+      // iOS Chrome
+      'ios_chrome_icon', 'ios_chrome_icon_bg', 'ios_chrome_icon_color', 'ios_chrome_title', 'ios_chrome_subtitle',
+      'ios_chrome_button_text',
+      // iOS Unsupported
+      'ios_unsupported_icon', 'ios_unsupported_icon_bg', 'ios_unsupported_icon_color', 'ios_unsupported_title',
+      'ios_unsupported_subtitle', 'ios_unsupported_button_text', 'ios_unsupported_button_telegram',
+      'ios_unsupported_button_copy', 'ios_unsupported_copy_success', 'ios_unsupported_copy_hint',
+      // Android Unsupported
+      'android_unsupported_icon', 'android_unsupported_icon_bg', 'android_unsupported_icon_color', 'android_unsupported_title',
+      'android_unsupported_subtitle', 'android_unsupported_button_text', 'android_unsupported_loading_text',
+      'android_unsupported_copy_success', 'android_unsupported_copy_hint',
+      // Footer
+      'footer_title', 'footer_item1_icon', 'footer_item1_icon_color', 'footer_item1_text',
+      'footer_item2_icon', 'footer_item2_icon_color', 'footer_item2_text',
+      'footer_item3_icon', 'footer_item3_icon_color', 'footer_item3_text'
     ];
 
     const updates: string[] = [];

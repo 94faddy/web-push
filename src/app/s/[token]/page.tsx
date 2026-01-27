@@ -33,6 +33,79 @@ interface PageSettings {
   logo_width: number;
   page_title: string;
   page_subtitle: string;
+  // Subscribe Form
+  subscribe_icon?: string;
+  subscribe_icon_bg?: string;
+  subscribe_icon_color?: string;
+  subscribe_title?: string;
+  subscribe_subtitle?: string;
+  subscribe_button_text?: string;
+  subscribe_loading_text?: string;
+  // Success
+  success_icon?: string;
+  success_icon_bg?: string;
+  success_icon_color?: string;
+  success_title?: string;
+  success_title_existing?: string;
+  success_subtitle?: string;
+  success_box_icon?: string;
+  success_box_icon_color?: string;
+  success_box_title?: string;
+  success_box_subtitle?: string;
+  // Blocked/Denied
+  blocked_icon?: string;
+  blocked_icon_bg?: string;
+  blocked_icon_color?: string;
+  blocked_title?: string;
+  blocked_subtitle?: string;
+  blocked_button_text?: string;
+  blocked_tip_icon?: string;
+  blocked_tip_icon_color?: string;
+  blocked_tip_text?: string;
+  // iOS Safari
+  ios_safari_icon?: string;
+  ios_safari_icon_bg?: string;
+  ios_safari_icon_color?: string;
+  ios_safari_title?: string;
+  ios_safari_subtitle?: string;
+  ios_safari_button_text?: string;
+  // iOS Chrome
+  ios_chrome_icon?: string;
+  ios_chrome_icon_bg?: string;
+  ios_chrome_icon_color?: string;
+  ios_chrome_title?: string;
+  ios_chrome_subtitle?: string;
+  ios_chrome_button_text?: string;
+  // iOS Unsupported
+  ios_unsupported_icon?: string;
+  ios_unsupported_icon_bg?: string;
+  ios_unsupported_icon_color?: string;
+  ios_unsupported_title?: string;
+  ios_unsupported_subtitle?: string;
+  ios_unsupported_button_text?: string;
+  ios_unsupported_copy_success?: string;
+  ios_unsupported_copy_hint?: string;
+  // Android Unsupported
+  android_unsupported_icon?: string;
+  android_unsupported_icon_bg?: string;
+  android_unsupported_icon_color?: string;
+  android_unsupported_title?: string;
+  android_unsupported_subtitle?: string;
+  android_unsupported_button_text?: string;
+  android_unsupported_loading_text?: string;
+  android_unsupported_copy_success?: string;
+  android_unsupported_copy_hint?: string;
+  // Footer
+  footer_title?: string;
+  footer_item1_icon?: string;
+  footer_item1_icon_color?: string;
+  footer_item1_text?: string;
+  footer_item2_icon?: string;
+  footer_item2_icon_color?: string;
+  footer_item2_text?: string;
+  footer_item3_icon?: string;
+  footer_item3_icon_color?: string;
+  footer_item3_text?: string;
 }
 
 const defaultSettings: PageSettings = {
@@ -53,6 +126,26 @@ const defaultSettings: PageSettings = {
   page_title: 'Web Push Notifications',
   page_subtitle: 'รับการแจ้งเตือนข่าวสารล่าสุดจากเรา'
 };
+
+// FooterIcon component - รองรับทั้ง emoji และ Iconify icons
+function FooterIcon({ icon, color, fallback }: { icon?: string; color?: string; fallback: string }) {
+  const iconValue = icon || fallback;
+  const iconColor = color || '#3b82f6';
+  
+  // ถ้าเป็น Iconify icon (มี :)
+  if (iconValue.includes(':')) {
+    return (
+      <img 
+        src={`https://api.iconify.design/${iconValue}.svg?color=${encodeURIComponent(iconColor)}`}
+        alt=""
+        style={{ width: 28, height: 28 }}
+      />
+    );
+  }
+  
+  // ถ้าเป็น emoji
+  return <span>{iconValue}</span>;
+}
 
 export default function SubscribePage() {
   const params = useParams();
@@ -233,18 +326,59 @@ export default function SubscribePage() {
       return (
         <IOSUnsupported
           currentUrl={currentUrl}
+          settings={{
+            icon: settings.ios_unsupported_icon,
+            iconBg: settings.ios_unsupported_icon_bg,
+            iconColor: settings.ios_unsupported_icon_color,
+            title: settings.ios_unsupported_title,
+            subtitle: settings.ios_unsupported_subtitle,
+            buttonText: settings.ios_unsupported_button_text,
+            copySuccess: settings.ios_unsupported_copy_success,
+            copyHint: settings.ios_unsupported_copy_hint,
+            buttonHue: settings.button_hue,
+            buttonSaturation: settings.button_saturation,
+            buttonLightness: settings.button_lightness
+          }}
         />
       );
     }
 
     // iOS Safari - ต้อง Add to Home Screen (ปุ่ม Share ด้านล่าง)
     if (needsInstall && browserInfo.isIOSSafari) {
-      return <IOSAddToHomeScreen />;
+      return (
+        <IOSAddToHomeScreen 
+          settings={{
+            icon: settings.ios_safari_icon,
+            iconBg: settings.ios_safari_icon_bg,
+            iconColor: settings.ios_safari_icon_color,
+            title: settings.ios_safari_title,
+            subtitle: settings.ios_safari_subtitle,
+            buttonText: settings.ios_safari_button_text,
+            buttonHue: settings.button_hue,
+            buttonSaturation: settings.button_saturation,
+            buttonLightness: settings.button_lightness
+          }}
+        />
+      );
     }
 
     // iOS Chrome - ต้อง Add to Home Screen (ปุ่ม Share มุมขวาบน)
     if (needsInstall && browserInfo.isIOSChrome) {
-      return <IOSChromeAddToHomeScreen />;
+      return (
+        <IOSChromeAddToHomeScreen 
+          settings={{
+            icon: settings.ios_chrome_icon,
+            iconBg: settings.ios_chrome_icon_bg,
+            iconColor: settings.ios_chrome_icon_color,
+            title: settings.ios_chrome_title,
+            subtitle: settings.ios_chrome_subtitle,
+            buttonText: settings.ios_chrome_button_text,
+            buttonHue: settings.button_hue,
+            buttonSaturation: settings.button_saturation,
+            buttonLightness: settings.button_lightness
+          }}
+        />
+      );
     }
 
     // Android - Browser ไม่รองรับ หรือ In-App Browser
@@ -252,6 +386,20 @@ export default function SubscribePage() {
       return (
         <AndroidUnsupported
           currentUrl={currentUrl}
+          settings={{
+            icon: settings.android_unsupported_icon,
+            iconBg: settings.android_unsupported_icon_bg,
+            iconColor: settings.android_unsupported_icon_color,
+            title: settings.android_unsupported_title,
+            subtitle: settings.android_unsupported_subtitle,
+            buttonText: settings.android_unsupported_button_text,
+            loadingText: settings.android_unsupported_loading_text,
+            copySuccess: settings.android_unsupported_copy_success,
+            copyHint: settings.android_unsupported_copy_hint,
+            buttonHue: settings.button_hue,
+            buttonSaturation: settings.button_saturation,
+            buttonLightness: settings.button_lightness
+          }}
         />
       );
     }
@@ -261,18 +409,66 @@ export default function SubscribePage() {
       return (
         <AndroidUnsupported
           currentUrl={currentUrl}
+          settings={{
+            icon: settings.android_unsupported_icon,
+            iconBg: settings.android_unsupported_icon_bg,
+            iconColor: settings.android_unsupported_icon_color,
+            title: settings.android_unsupported_title,
+            subtitle: settings.android_unsupported_subtitle,
+            buttonText: settings.android_unsupported_button_text,
+            loadingText: settings.android_unsupported_loading_text,
+            copySuccess: settings.android_unsupported_copy_success,
+            copyHint: settings.android_unsupported_copy_hint,
+            buttonHue: settings.button_hue,
+            buttonSaturation: settings.button_saturation,
+            buttonLightness: settings.button_lightness
+          }}
         />
       );
     }
 
     // Permission Denied
     if (permission === 'denied') {
-      return <PermissionDenied browserInfo={browserInfo} />;
+      return (
+        <PermissionDenied 
+          browserInfo={browserInfo}
+          settings={{
+            icon: settings.blocked_icon,
+            iconBg: settings.blocked_icon_bg,
+            iconColor: settings.blocked_icon_color,
+            title: settings.blocked_title,
+            subtitle: settings.blocked_subtitle,
+            buttonText: settings.blocked_button_text,
+            tipIcon: settings.blocked_tip_icon,
+            tipIconColor: settings.blocked_tip_icon_color,
+            tipText: settings.blocked_tip_text,
+            buttonHue: settings.button_hue,
+            buttonSaturation: settings.button_saturation,
+            buttonLightness: settings.button_lightness
+          }}
+        />
+      );
     }
 
     // Already Subscribed
     if (isSubscribed) {
-      return <SubscribeSuccess justSubscribed={justSubscribed} />;
+      return (
+        <SubscribeSuccess 
+          justSubscribed={justSubscribed}
+          settings={{
+            icon: settings.success_icon,
+            iconBg: settings.success_icon_bg,
+            iconColor: settings.success_icon_color,
+            title: settings.success_title,
+            titleExisting: settings.success_title_existing,
+            subtitle: settings.success_subtitle,
+            boxIcon: settings.success_box_icon,
+            boxIconColor: settings.success_box_icon_color,
+            boxTitle: settings.success_box_title,
+            boxSubtitle: settings.success_box_subtitle
+          }}
+        />
+      );
     }
 
     // Normal Subscribe Form
@@ -281,6 +477,18 @@ export default function SubscribePage() {
         onSubscribe={handleSubscribe}
         isLoading={isLoading}
         browserInfo={browserInfo}
+        settings={{
+          icon: settings.subscribe_icon,
+          iconBg: settings.subscribe_icon_bg,
+          iconColor: settings.subscribe_icon_color,
+          title: settings.subscribe_title,
+          subtitle: settings.subscribe_subtitle,
+          buttonText: settings.subscribe_button_text,
+          loadingText: settings.subscribe_loading_text,
+          buttonHue: settings.button_hue,
+          buttonSaturation: settings.button_saturation,
+          buttonLightness: settings.button_lightness
+        }}
       />
     );
   };
@@ -323,20 +531,26 @@ export default function SubscribePage() {
           {/* Footer - What you'll get */}
           <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #e5e7eb' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '16px', textAlign: 'center' }}>
-              สิ่งที่คุณจะได้รับ
+              {settings.footer_title || 'สิ่งที่คุณจะได้รับ'}
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px', textAlign: 'center' }}>
               <div>
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>📰</div>
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>ข่าวสารล่าสุด</div>
+                <div style={{ fontSize: '24px', marginBottom: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '32px' }}>
+                  <FooterIcon icon={settings.footer_item1_icon} color={settings.footer_item1_icon_color} fallback="📰" />
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>{settings.footer_item1_text || 'ข่าวสารล่าสุด'}</div>
               </div>
               <div>
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>🎁</div>
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>โปรโมชั่น</div>
+                <div style={{ fontSize: '24px', marginBottom: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '32px' }}>
+                  <FooterIcon icon={settings.footer_item2_icon} color={settings.footer_item2_icon_color} fallback="🎁" />
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>{settings.footer_item2_text || 'โปรโมชั่น'}</div>
               </div>
               <div>
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>⚡</div>
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>แจ้งเตือนทันที</div>
+                <div style={{ fontSize: '24px', marginBottom: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '32px' }}>
+                  <FooterIcon icon={settings.footer_item3_icon} color={settings.footer_item3_icon_color} fallback="⚡" />
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>{settings.footer_item3_text || 'แจ้งเตือนทันที'}</div>
               </div>
             </div>
           </div>
