@@ -29,6 +29,9 @@ interface PageSettings {
   subscribe_subtitle: string;
   subscribe_button_text: string;
   subscribe_loading_text: string;
+  subscribe_button_hue: number;
+  subscribe_button_saturation: number;
+  subscribe_button_lightness: number;
   success_icon: string;
   success_icon_bg: string;
   success_icon_color: string;
@@ -39,6 +42,9 @@ interface PageSettings {
   success_box_icon_color: string;
   success_box_title: string;
   success_box_subtitle: string;
+  success_button_hue: number;
+  success_button_saturation: number;
+  success_button_lightness: number;
   blocked_icon: string;
   blocked_icon_bg: string;
   blocked_icon_color: string;
@@ -48,18 +54,27 @@ interface PageSettings {
   blocked_tip_icon: string;
   blocked_tip_icon_color: string;
   blocked_tip_text: string;
+  blocked_button_hue: number;
+  blocked_button_saturation: number;
+  blocked_button_lightness: number;
   ios_safari_icon: string;
   ios_safari_icon_bg: string;
   ios_safari_icon_color: string;
   ios_safari_title: string;
   ios_safari_subtitle: string;
   ios_safari_button_text: string;
+  ios_safari_button_hue: number;
+  ios_safari_button_saturation: number;
+  ios_safari_button_lightness: number;
   ios_chrome_icon: string;
   ios_chrome_icon_bg: string;
   ios_chrome_icon_color: string;
   ios_chrome_title: string;
   ios_chrome_subtitle: string;
   ios_chrome_button_text: string;
+  ios_chrome_button_hue: number;
+  ios_chrome_button_saturation: number;
+  ios_chrome_button_lightness: number;
   ios_unsupported_icon: string;
   ios_unsupported_icon_bg: string;
   ios_unsupported_icon_color: string;
@@ -68,6 +83,9 @@ interface PageSettings {
   ios_unsupported_button_text: string;
   ios_unsupported_copy_success: string;
   ios_unsupported_copy_hint: string;
+  ios_unsupported_button_hue: number;
+  ios_unsupported_button_saturation: number;
+  ios_unsupported_button_lightness: number;
   android_unsupported_icon: string;
   android_unsupported_icon_bg: string;
   android_unsupported_icon_color: string;
@@ -77,6 +95,9 @@ interface PageSettings {
   android_unsupported_loading_text: string;
   android_unsupported_copy_success: string;
   android_unsupported_copy_hint: string;
+  android_unsupported_button_hue: number;
+  android_unsupported_button_saturation: number;
+  android_unsupported_button_lightness: number;
   footer_title: string;
   footer_item1_icon: string;
   footer_item1_icon_color: string;
@@ -100,25 +121,32 @@ const DEFAULT: PageSettings = {
   subscribe_icon: 'mdi:bell', subscribe_icon_bg: 'linear-gradient(135deg, hsl(45, 85%, 88%) 0%, hsl(45, 75%, 78%) 100%)', subscribe_icon_color: '#f59e0b',
   subscribe_title: 'รับการแจ้งเตือน', subscribe_subtitle: 'สมัครรับการแจ้งเตือนเพื่อไม่พลาดข่าวสาร',
   subscribe_button_text: 'สมัครรับการแจ้งเตือน', subscribe_loading_text: 'กำลังดำเนินการ...',
+  subscribe_button_hue: 142, subscribe_button_saturation: 71, subscribe_button_lightness: 45,
   success_icon: 'mdi:check-circle', success_icon_bg: 'linear-gradient(135deg, hsl(142, 85%, 88%) 0%, hsl(142, 75%, 78%) 100%)', success_icon_color: '#16a34a',
   success_title: 'สมัครสำเร็จ!', success_title_existing: 'คุณกำลังรับการแจ้งเตือน',
   success_subtitle: 'คุณจะได้รับข่าวสารอัพเดทล่าสุดจากเรา',
   success_box_icon: 'mdi:bell-ring', success_box_icon_color: '#16a34a', success_box_title: 'ระบบพร้อมแจ้งเตือน',
   success_box_subtitle: 'เมื่อมีข่าวสารใหม่ คุณจะได้รับการแจ้งเตือนทันที',
+  success_button_hue: 142, success_button_saturation: 71, success_button_lightness: 45,
   blocked_icon: 'mdi:bell-off', blocked_icon_bg: 'linear-gradient(135deg, hsl(0, 85%, 88%) 0%, hsl(0, 75%, 78%) 100%)', blocked_icon_color: '#dc2626',
   blocked_title: 'การแจ้งเตือนถูกบล็อก', blocked_subtitle: 'กรุณาเปิดใช้งานในการตั้งค่าเบราว์เซอร์',
   blocked_button_text: 'ดูวิธีเปิดการแจ้งเตือน', blocked_tip_icon: 'mdi:lightbulb', blocked_tip_icon_color: '#ca8a04',
   blocked_tip_text: 'หลังจากเปิดการแจ้งเตือนแล้ว ให้รีเฟรชหน้านี้',
+  blocked_button_hue: 142, blocked_button_saturation: 71, blocked_button_lightness: 45,
   ios_safari_icon: 'mdi:cellphone', ios_safari_icon_bg: 'linear-gradient(135deg, hsl(210, 85%, 88%) 0%, hsl(210, 75%, 78%) 100%)', ios_safari_icon_color: '#3b82f6',
   ios_safari_title: 'เพิ่มลงหน้าจอหลัก', ios_safari_subtitle: 'กรุณาเพิ่มเว็บไซต์นี้ลงหน้าจอหลัก', ios_safari_button_text: 'ดูวิธีทำ',
+  ios_safari_button_hue: 142, ios_safari_button_saturation: 71, ios_safari_button_lightness: 45,
   ios_chrome_icon: 'mdi:cellphone', ios_chrome_icon_bg: 'linear-gradient(135deg, hsl(210, 85%, 88%) 0%, hsl(210, 75%, 78%) 100%)', ios_chrome_icon_color: '#3b82f6',
   ios_chrome_title: 'เพิ่มลงหน้าจอหลัก', ios_chrome_subtitle: 'กรุณาเพิ่มเว็บไซต์นี้ลงหน้าจอหลัก', ios_chrome_button_text: 'ดูวิธีทำ',
+  ios_chrome_button_hue: 142, ios_chrome_button_saturation: 71, ios_chrome_button_lightness: 45,
   ios_unsupported_icon: 'mdi:apple-safari', ios_unsupported_icon_bg: 'linear-gradient(135deg, hsl(210, 85%, 88%) 0%, hsl(210, 75%, 78%) 100%)', ios_unsupported_icon_color: '#3b82f6',
   ios_unsupported_title: 'เปิดใน Safari', ios_unsupported_subtitle: 'กรุณาเปิดลิงก์นี้ใน Safari', ios_unsupported_button_text: 'เปิดใน Safari',
   ios_unsupported_copy_success: 'คัดลอกลิงก์แล้ว!', ios_unsupported_copy_hint: 'วางลิงก์ใน Safari',
+  ios_unsupported_button_hue: 142, ios_unsupported_button_saturation: 71, ios_unsupported_button_lightness: 45,
   android_unsupported_icon: 'mdi:google-chrome', android_unsupported_icon_bg: 'linear-gradient(135deg, hsl(45, 85%, 88%) 0%, hsl(45, 75%, 78%) 100%)', android_unsupported_icon_color: '#f59e0b',
   android_unsupported_title: 'เปิดใน Chrome', android_unsupported_subtitle: 'กรุณาเปิดลิงก์นี้ใน Chrome', android_unsupported_button_text: 'เปิดใน Chrome',
   android_unsupported_loading_text: 'กำลังเปิด Chrome...', android_unsupported_copy_success: 'คัดลอกลิงก์แล้ว!', android_unsupported_copy_hint: 'วางลิงก์ใน Chrome',
+  android_unsupported_button_hue: 142, android_unsupported_button_saturation: 71, android_unsupported_button_lightness: 45,
   footer_title: 'สิ่งที่คุณจะได้รับ',
   footer_item1_icon: 'mdi:newspaper', footer_item1_icon_color: '#3b82f6', footer_item1_text: 'ข่าวสารล่าสุด',
   footer_item2_icon: 'mdi:gift', footer_item2_icon_color: '#22c55e', footer_item2_text: 'โปรโมชั่น',
@@ -409,6 +437,7 @@ export default function PageSettingsPage() {
   // Helper functions - ป้องกัน undefined ทุกกรณี
   const str = (val: unknown, def = ''): string => (val !== undefined && val !== null && val !== '') ? String(val) : def;
   const num = (val: unknown, def: number): number => {
+    if (val === null || val === undefined || val === '') return def;
     const n = Number(val);
     return !isNaN(n) ? n : def;
   };
@@ -473,6 +502,51 @@ export default function PageSettingsPage() {
   };
 
   const btnGrad = `linear-gradient(135deg, hsl(${num(s.button_hue, 142)}, ${num(s.button_saturation, 71)}%, ${num(s.button_lightness, 45)}%) 0%, hsl(${num(s.button_hue, 142)}, ${num(s.button_saturation, 71)}%, ${Math.max(num(s.button_lightness, 45) - 10, 10)}%) 100%)`;
+
+  // สร้าง button gradient สำหรับแต่ละ tab
+  const getButtonGrad = (prefix: string) => {
+    const hueKey = `${prefix}_button_hue` as keyof PageSettings;
+    const satKey = `${prefix}_button_saturation` as keyof PageSettings;
+    const lightKey = `${prefix}_button_lightness` as keyof PageSettings;
+    const h = num(s[hueKey] as number, num(s.button_hue, 142));
+    const sat = num(s[satKey] as number, num(s.button_saturation, 71));
+    const l = num(s[lightKey] as number, num(s.button_lightness, 45));
+    return `linear-gradient(135deg, hsl(${h}, ${sat}%, ${l}%) 0%, hsl(${h}, ${sat}%, ${Math.max(l - 10, 10)}%) 100%)`;
+  };
+
+  // Render สีปุ่มสำหรับแต่ละ tab
+  const renderButtonColorPicker = (prefix: string, buttonText: string) => {
+    const hueKey = `${prefix}_button_hue` as keyof PageSettings;
+    const satKey = `${prefix}_button_saturation` as keyof PageSettings;
+    const lightKey = `${prefix}_button_lightness` as keyof PageSettings;
+    const h = num(s[hueKey] as number, num(s.button_hue, 142));
+    const sat = num(s[satKey] as number, num(s.button_saturation, 71));
+    const l = num(s[lightKey] as number, num(s.button_lightness, 45));
+    const grad = `linear-gradient(135deg, hsl(${h}, ${sat}%, ${l}%) 0%, hsl(${h}, ${sat}%, ${Math.max(l - 10, 10)}%) 100%)`;
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 สีปุ่ม</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-600 mb-2">Hue: {h}°</label>
+            <input type="range" min={0} max={360} value={h} onChange={e => update(hueKey, +e.target.value)} className="w-full h-3 rounded-lg appearance-none cursor-pointer" style={{ background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)' }} />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-2">Saturation: {sat}%</label>
+            <input type="range" min={0} max={100} value={sat} onChange={e => update(satKey, +e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg cursor-pointer" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-2">Lightness: {l}%</label>
+            <input type="range" min={20} max={80} value={l} onChange={e => update(lightKey, +e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg cursor-pointer" />
+          </div>
+          <div className="pt-2">
+            <div className="text-sm text-gray-600 mb-2">ตัวอย่างปุ่ม:</div>
+            <button style={{ background: grad, padding: '12px 24px', borderRadius: '10px', color: 'white', fontWeight: 600 }}>{buttonText}</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const getBgStyle = (): React.CSSProperties => {
     if (s.bg_type === 'image' && s.bg_image_url) return s.bg_image_overlay ? { backgroundImage: `linear-gradient(rgba(0,0,0,${num(s.bg_image_overlay_opacity, 40)/100}), rgba(0,0,0,${num(s.bg_image_overlay_opacity, 40)/100})), url(${s.bg_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { backgroundImage: `url(${s.bg_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' };
@@ -556,26 +630,17 @@ export default function PageSettingsPage() {
           <TextInput label="ข้อความขณะโหลด" value={str(s.subscribe_loading_text)} onChange={v => update('subscribe_loading_text', v)} />
         </div>
       </div>
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 สีปุ่ม (ใช้ทุกหน้า)</h3>
-        <div className="space-y-4">
-          <div><label className="block text-sm text-gray-600 mb-2">Hue: {num(s.button_hue, 142)}°</label><input type="range" min={0} max={360} value={num(s.button_hue, 142)} onChange={e => update('button_hue', +e.target.value)} className="w-full h-3 rounded-lg appearance-none" style={{ background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)' }} /></div>
-          <div><label className="block text-sm text-gray-600 mb-2">Saturation: {num(s.button_saturation, 71)}%</label><input type="range" min={0} max={100} value={num(s.button_saturation, 71)} onChange={e => update('button_saturation', +e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg" /></div>
-          <div><label className="block text-sm text-gray-600 mb-2">Lightness: {num(s.button_lightness, 45)}%</label><input type="range" min={20} max={80} value={num(s.button_lightness, 45)} onChange={e => update('button_lightness', +e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg" /></div>
-          <div className="pt-2"><div className="text-sm text-gray-600 mb-2">ตัวอย่างปุ่ม:</div><button style={{ background: btnGrad, padding: '12px 24px', borderRadius: '10px', color: 'white', fontWeight: 600 }}>{str(s.subscribe_button_text, 'สมัคร')}</button></div>
-        </div>
-      </div>
+      {renderButtonColorPicker('subscribe', str(s.subscribe_button_text, 'สมัคร'))}
     </div>
   );
 
   const renderFooter = () => (
     <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-      <TextInput label="หัวข้อ Footer" value={str(s.footer_title)} onChange={v => update('footer_title', v)} />
       {[1, 2, 3].map(n => {
         const iconKey = `footer_item${n}_icon` as keyof PageSettings;
         const colorKey = `footer_item${n}_icon_color` as keyof PageSettings;
         const textKey = `footer_item${n}_text` as keyof PageSettings;
-        return (<div key={n} className="border-t pt-4"><p className="font-medium text-gray-700 mb-3">รายการที่ {n}</p><div className="space-y-3"><IconPicker label="ไอคอน" value={str(s[iconKey] as string, 'mdi:star')} color={str(s[colorKey] as string, '#3b82f6')} onChange={v => update(iconKey, v)} onColorChange={v => update(colorKey, v)} /><TextInput label="ข้อความ" value={str(s[textKey] as string)} onChange={v => update(textKey, v)} /></div></div>);
+        return (<div key={n} className={n > 1 ? "border-t pt-4" : ""}><p className="font-medium text-gray-700 mb-3">รายการที่ {n}</p><div className="space-y-3"><IconPicker label="ไอคอน" value={str(s[iconKey] as string, 'mdi:star')} color={str(s[colorKey] as string, '#3b82f6')} onChange={v => update(iconKey, v)} onColorChange={v => update(colorKey, v)} /><TextInput label="ข้อความ" value={str(s[textKey] as string)} onChange={v => update(textKey, v)} /></div></div>);
       })}
     </div>
   );
@@ -604,19 +669,29 @@ export default function PageSettingsPage() {
     const iconStyle = (bg: string) => ({ width: 60, height: 60, background: bg || 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', borderRadius: '50%', display: 'flex' as const, alignItems: 'center' as const, justifyContent: 'center' as const, margin: '0 auto 12px' });
     const titleStyle = { fontSize: 16, fontWeight: 'bold' as const, color: '#1f2937', marginBottom: 6 };
     const subStyle = { color: '#6b7280', marginBottom: 16, fontSize: 12 };
-    const btnStyle = { width: '100%', padding: '10px 16px', background: btnGrad, color: 'white', fontWeight: 600 as const, borderRadius: 10, border: 'none', fontSize: 14 };
+    const getBtnStyle = (prefix: string) => ({ width: '100%', padding: '10px 16px', background: getButtonGrad(prefix), color: 'white', fontWeight: 600 as const, borderRadius: 10, border: 'none', fontSize: 14 });
     const content: Record<string, React.ReactNode> = {
-      design: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.subscribe_icon_bg))}><IconDisplay icon={str(s.subscribe_icon, 'mdi:bell')} color={str(s.subscribe_icon_color, '#f59e0b')} /></div><h2 style={titleStyle}>{str(s.subscribe_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.subscribe_subtitle)) }} /><button style={btnStyle}>{str(s.subscribe_button_text)}</button></div>,
-      subscribe: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.subscribe_icon_bg))}><IconDisplay icon={str(s.subscribe_icon, 'mdi:bell')} color={str(s.subscribe_icon_color, '#f59e0b')} /></div><h2 style={titleStyle}>{str(s.subscribe_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.subscribe_subtitle)) }} /><button style={btnStyle}>{str(s.subscribe_button_text)}</button></div>,
+      design: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.subscribe_icon_bg))}><IconDisplay icon={str(s.subscribe_icon, 'mdi:bell')} color={str(s.subscribe_icon_color, '#f59e0b')} /></div><h2 style={titleStyle}>{str(s.subscribe_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.subscribe_subtitle)) }} /><button style={getBtnStyle('subscribe')}>{str(s.subscribe_button_text)}</button></div>,
+      subscribe: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.subscribe_icon_bg))}><IconDisplay icon={str(s.subscribe_icon, 'mdi:bell')} color={str(s.subscribe_icon_color, '#f59e0b')} /></div><h2 style={titleStyle}>{str(s.subscribe_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.subscribe_subtitle)) }} /><button style={getBtnStyle('subscribe')}>{str(s.subscribe_button_text)}</button></div>,
       success: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.success_icon_bg))}><IconDisplay icon={str(s.success_icon, 'mdi:check-circle')} color={str(s.success_icon_color, '#16a34a')} /></div><h2 style={titleStyle}>{str(s.success_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.success_subtitle)) }} /><div style={{ background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', borderRadius: 10, padding: 16, border: '1px solid #bbf7d0' }}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}><IconDisplay icon={str(s.success_box_icon, 'mdi:bell-ring')} color={str(s.success_box_icon_color, '#16a34a')} size={20} /><span style={{ fontSize: 12, fontWeight: 600, color: '#15803d' }}>{str(s.success_box_title)}</span></div><p style={{ fontSize: 11, color: '#166534', margin: 0 }} dangerouslySetInnerHTML={{ __html: nl2br(str(s.success_box_subtitle)) }} /></div></div>,
-      blocked: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.blocked_icon_bg))}><IconDisplay icon={str(s.blocked_icon, 'mdi:bell-off')} color={str(s.blocked_icon_color, '#dc2626')} /></div><h2 style={titleStyle}>{str(s.blocked_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.blocked_subtitle)) }} /><button style={btnStyle}>{str(s.blocked_button_text)}</button><div style={{ marginTop: 16, padding: 12, background: '#fefce8', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><IconDisplay icon={str(s.blocked_tip_icon, 'mdi:lightbulb')} color={str(s.blocked_tip_icon_color, '#ca8a04')} size={16} /><span style={{ fontSize: 11, color: '#854d0e' }}>{str(s.blocked_tip_text)}</span></div></div>,
-      ios_safari: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.ios_safari_icon_bg))}><IconDisplay icon={str(s.ios_safari_icon, 'mdi:cellphone')} color={str(s.ios_safari_icon_color, '#3b82f6')} /></div><h2 style={titleStyle}>{str(s.ios_safari_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.ios_safari_subtitle)) }} /><button style={btnStyle}>{str(s.ios_safari_button_text)}</button></div>,
-      ios_chrome: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.ios_chrome_icon_bg))}><IconDisplay icon={str(s.ios_chrome_icon, 'mdi:cellphone')} color={str(s.ios_chrome_icon_color, '#3b82f6')} /></div><h2 style={titleStyle}>{str(s.ios_chrome_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.ios_chrome_subtitle)) }} /><button style={btnStyle}>{str(s.ios_chrome_button_text)}</button></div>,
-      ios_unsupported: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.ios_unsupported_icon_bg))}><IconDisplay icon={str(s.ios_unsupported_icon, 'mdi:apple-safari')} color={str(s.ios_unsupported_icon_color, '#3b82f6')} /></div><h2 style={titleStyle}>{str(s.ios_unsupported_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.ios_unsupported_subtitle)) }} /><button style={btnStyle}>{str(s.ios_unsupported_button_text)}</button></div>,
-      android_unsupported: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.android_unsupported_icon_bg))}><IconDisplay icon={str(s.android_unsupported_icon, 'mdi:google-chrome')} color={str(s.android_unsupported_icon_color, '#f59e0b')} /></div><h2 style={titleStyle}>{str(s.android_unsupported_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.android_unsupported_subtitle)) }} /><button style={btnStyle}>{str(s.android_unsupported_button_text)}</button></div>,
-      footer: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.subscribe_icon_bg))}><IconDisplay icon={str(s.subscribe_icon, 'mdi:bell')} color={str(s.subscribe_icon_color, '#f59e0b')} /></div><h2 style={titleStyle}>{str(s.subscribe_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.subscribe_subtitle)) }} /><button style={btnStyle}>{str(s.subscribe_button_text)}</button><p style={{ fontSize: 10, color: '#9ca3af', marginTop: 12 }}>👇 ดู Footer ด้านล่าง</p></div>
+      blocked: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.blocked_icon_bg))}><IconDisplay icon={str(s.blocked_icon, 'mdi:bell-off')} color={str(s.blocked_icon_color, '#dc2626')} /></div><h2 style={titleStyle}>{str(s.blocked_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.blocked_subtitle)) }} /><button style={getBtnStyle('blocked')}>{str(s.blocked_button_text)}</button><div style={{ marginTop: 16, padding: 12, background: '#fefce8', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><IconDisplay icon={str(s.blocked_tip_icon, 'mdi:lightbulb')} color={str(s.blocked_tip_icon_color, '#ca8a04')} size={16} /><span style={{ fontSize: 11, color: '#854d0e' }}>{str(s.blocked_tip_text)}</span></div></div>,
+      ios_safari: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.ios_safari_icon_bg))}><IconDisplay icon={str(s.ios_safari_icon, 'mdi:cellphone')} color={str(s.ios_safari_icon_color, '#3b82f6')} /></div><h2 style={titleStyle}>{str(s.ios_safari_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.ios_safari_subtitle)) }} /><button style={getBtnStyle('ios_safari')}>{str(s.ios_safari_button_text)}</button></div>,
+      ios_chrome: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.ios_chrome_icon_bg))}><IconDisplay icon={str(s.ios_chrome_icon, 'mdi:cellphone')} color={str(s.ios_chrome_icon_color, '#3b82f6')} /></div><h2 style={titleStyle}>{str(s.ios_chrome_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.ios_chrome_subtitle)) }} /><button style={getBtnStyle('ios_chrome')}>{str(s.ios_chrome_button_text)}</button></div>,
+      ios_unsupported: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.ios_unsupported_icon_bg))}><IconDisplay icon={str(s.ios_unsupported_icon, 'mdi:apple-safari')} color={str(s.ios_unsupported_icon_color, '#3b82f6')} /></div><h2 style={titleStyle}>{str(s.ios_unsupported_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.ios_unsupported_subtitle)) }} /><button style={getBtnStyle('ios_unsupported')}>{str(s.ios_unsupported_button_text)}</button></div>,
+      android_unsupported: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.android_unsupported_icon_bg))}><IconDisplay icon={str(s.android_unsupported_icon, 'mdi:google-chrome')} color={str(s.android_unsupported_icon_color, '#f59e0b')} /></div><h2 style={titleStyle}>{str(s.android_unsupported_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.android_unsupported_subtitle)) }} /><button style={getBtnStyle('android_unsupported')}>{str(s.android_unsupported_button_text)}</button></div>,
+      footer: <div style={{ textAlign: 'center' }}><div style={iconStyle(str(s.subscribe_icon_bg))}><IconDisplay icon={str(s.subscribe_icon, 'mdi:bell')} color={str(s.subscribe_icon_color, '#f59e0b')} /></div><h2 style={titleStyle}>{str(s.subscribe_title)}</h2><p style={subStyle} dangerouslySetInnerHTML={{ __html: nl2br(str(s.subscribe_subtitle)) }} /><button style={getBtnStyle('subscribe')}>{str(s.subscribe_button_text)}</button><p style={{ fontSize: 10, color: '#9ca3af', marginTop: 12 }}>👇 ดู Footer ด้านล่าง</p></div>
     };
     return content[activeTab] || null;
+  };
+
+  // Map prefix to button text key
+  const buttonTextMap: Record<string, string> = {
+    success: 'success_title',
+    blocked: 'blocked_button_text',
+    ios_safari: 'ios_safari_button_text',
+    ios_chrome: 'ios_chrome_button_text',
+    ios_unsupported: 'ios_unsupported_button_text',
+    android_unsupported: 'android_unsupported_button_text'
   };
 
   const renderTab = () => {
@@ -631,7 +706,16 @@ export default function PageSettingsPage() {
       ios_unsupported: [{ key: 'icon', label: 'ไอคอน', type: 'icon' }, { key: 'icon_bg', label: 'สีพื้นหลังไอคอน', type: 'gradient' }, { key: 'title', label: 'หัวข้อ', type: 'text' }, { key: 'subtitle', label: 'คำอธิบาย', type: 'textarea' }, { key: 'button_text', label: 'ข้อความปุ่ม', type: 'text' }, { key: 'copy_success', label: 'ข้อความคัดลอกสำเร็จ', type: 'text' }, { key: 'copy_hint', label: 'คำแนะนำหลังคัดลอก', type: 'text' }],
       android_unsupported: [{ key: 'icon', label: 'ไอคอน', type: 'icon' }, { key: 'icon_bg', label: 'สีพื้นหลังไอคอน', type: 'gradient' }, { key: 'title', label: 'หัวข้อ', type: 'text' }, { key: 'subtitle', label: 'คำอธิบาย', type: 'textarea' }, { key: 'button_text', label: 'ข้อความปุ่ม', type: 'text' }, { key: 'loading_text', label: 'ข้อความขณะโหลด', type: 'text' }, { key: 'copy_success', label: 'ข้อความคัดลอกสำเร็จ', type: 'text' }, { key: 'copy_hint', label: 'คำแนะนำหลังคัดลอก', type: 'text' }]
     };
-    return renderContent(activeTab, configs[activeTab] || []);
+    const btnTextKey = buttonTextMap[activeTab] as keyof PageSettings;
+    const btnText = btnTextKey ? str(s[btnTextKey] as string, 'ปุ่ม') : 'ปุ่ม';
+    // Success page ไม่มีปุ่มหลัก แต่เพิ่มสีปุ่มไว้เผื่อใช้ในอนาคต (hidden for now)
+    const showButtonColor = activeTab !== 'success';
+    return (
+      <div className="space-y-6">
+        {renderContent(activeTab, configs[activeTab] || [])}
+        {showButtonColor && renderButtonColorPicker(activeTab, btnText)}
+      </div>
+    );
   };
 
   return (
@@ -656,7 +740,6 @@ export default function PageSettingsPage() {
               <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
                 {renderPreview()}
                 <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #e5e7eb' }}>
-                  <h3 style={{ fontSize: 12, fontWeight: 600, color: '#1f2937', marginBottom: 12, textAlign: 'center' }}>{str(s.footer_title, 'ทำไมต้องสมัคร?')}</h3>
                   <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: 8 }}>
                     {[1, 2, 3].map(n => {
                       const iconKey = `footer_item${n}_icon` as keyof PageSettings;

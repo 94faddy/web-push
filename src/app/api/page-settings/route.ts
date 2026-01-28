@@ -128,26 +128,33 @@ export async function PUT(request: NextRequest) {
       // Subscribe Form
       'subscribe_icon', 'subscribe_icon_bg', 'subscribe_icon_color', 'subscribe_title', 'subscribe_subtitle',
       'subscribe_button_text', 'subscribe_loading_text',
+      'subscribe_button_hue', 'subscribe_button_saturation', 'subscribe_button_lightness',
       // Success Page
       'success_icon', 'success_icon_bg', 'success_icon_color', 'success_title', 'success_title_existing',
       'success_subtitle', 'success_box_icon', 'success_box_icon_color', 'success_box_title', 'success_box_subtitle',
+      'success_button_hue', 'success_button_saturation', 'success_button_lightness',
       // Blocked Page
       'blocked_icon', 'blocked_icon_bg', 'blocked_icon_color', 'blocked_title', 'blocked_subtitle',
       'blocked_button_text', 'blocked_tip_icon', 'blocked_tip_icon_color', 'blocked_tip_text',
+      'blocked_button_hue', 'blocked_button_saturation', 'blocked_button_lightness',
       // iOS Safari
       'ios_safari_icon', 'ios_safari_icon_bg', 'ios_safari_icon_color', 'ios_safari_title', 'ios_safari_subtitle',
       'ios_safari_button_text',
+      'ios_safari_button_hue', 'ios_safari_button_saturation', 'ios_safari_button_lightness',
       // iOS Chrome
       'ios_chrome_icon', 'ios_chrome_icon_bg', 'ios_chrome_icon_color', 'ios_chrome_title', 'ios_chrome_subtitle',
       'ios_chrome_button_text',
+      'ios_chrome_button_hue', 'ios_chrome_button_saturation', 'ios_chrome_button_lightness',
       // iOS Unsupported
       'ios_unsupported_icon', 'ios_unsupported_icon_bg', 'ios_unsupported_icon_color', 'ios_unsupported_title',
       'ios_unsupported_subtitle', 'ios_unsupported_button_text', 'ios_unsupported_button_telegram',
       'ios_unsupported_button_copy', 'ios_unsupported_copy_success', 'ios_unsupported_copy_hint',
+      'ios_unsupported_button_hue', 'ios_unsupported_button_saturation', 'ios_unsupported_button_lightness',
       // Android Unsupported
       'android_unsupported_icon', 'android_unsupported_icon_bg', 'android_unsupported_icon_color', 'android_unsupported_title',
       'android_unsupported_subtitle', 'android_unsupported_button_text', 'android_unsupported_loading_text',
       'android_unsupported_copy_success', 'android_unsupported_copy_hint',
+      'android_unsupported_button_hue', 'android_unsupported_button_saturation', 'android_unsupported_button_lightness',
       // Footer
       'footer_title', 'footer_item1_icon', 'footer_item1_icon_color', 'footer_item1_text',
       'footer_item2_icon', 'footer_item2_icon_color', 'footer_item2_text',

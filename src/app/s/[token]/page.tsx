@@ -41,6 +41,9 @@ interface PageSettings {
   subscribe_subtitle?: string;
   subscribe_button_text?: string;
   subscribe_loading_text?: string;
+  subscribe_button_hue?: number;
+  subscribe_button_saturation?: number;
+  subscribe_button_lightness?: number;
   // Success
   success_icon?: string;
   success_icon_bg?: string;
@@ -52,6 +55,9 @@ interface PageSettings {
   success_box_icon_color?: string;
   success_box_title?: string;
   success_box_subtitle?: string;
+  success_button_hue?: number;
+  success_button_saturation?: number;
+  success_button_lightness?: number;
   // Blocked/Denied
   blocked_icon?: string;
   blocked_icon_bg?: string;
@@ -62,6 +68,9 @@ interface PageSettings {
   blocked_tip_icon?: string;
   blocked_tip_icon_color?: string;
   blocked_tip_text?: string;
+  blocked_button_hue?: number;
+  blocked_button_saturation?: number;
+  blocked_button_lightness?: number;
   // iOS Safari
   ios_safari_icon?: string;
   ios_safari_icon_bg?: string;
@@ -69,6 +78,9 @@ interface PageSettings {
   ios_safari_title?: string;
   ios_safari_subtitle?: string;
   ios_safari_button_text?: string;
+  ios_safari_button_hue?: number;
+  ios_safari_button_saturation?: number;
+  ios_safari_button_lightness?: number;
   // iOS Chrome
   ios_chrome_icon?: string;
   ios_chrome_icon_bg?: string;
@@ -76,6 +88,9 @@ interface PageSettings {
   ios_chrome_title?: string;
   ios_chrome_subtitle?: string;
   ios_chrome_button_text?: string;
+  ios_chrome_button_hue?: number;
+  ios_chrome_button_saturation?: number;
+  ios_chrome_button_lightness?: number;
   // iOS Unsupported
   ios_unsupported_icon?: string;
   ios_unsupported_icon_bg?: string;
@@ -85,6 +100,9 @@ interface PageSettings {
   ios_unsupported_button_text?: string;
   ios_unsupported_copy_success?: string;
   ios_unsupported_copy_hint?: string;
+  ios_unsupported_button_hue?: number;
+  ios_unsupported_button_saturation?: number;
+  ios_unsupported_button_lightness?: number;
   // Android Unsupported
   android_unsupported_icon?: string;
   android_unsupported_icon_bg?: string;
@@ -95,6 +113,9 @@ interface PageSettings {
   android_unsupported_loading_text?: string;
   android_unsupported_copy_success?: string;
   android_unsupported_copy_hint?: string;
+  android_unsupported_button_hue?: number;
+  android_unsupported_button_saturation?: number;
+  android_unsupported_button_lightness?: number;
   // Footer
   footer_title?: string;
   footer_item1_icon?: string;
@@ -412,9 +433,9 @@ export default function SubscribePage() {
             buttonText: settings.ios_unsupported_button_text,
             copySuccess: settings.ios_unsupported_copy_success,
             copyHint: settings.ios_unsupported_copy_hint,
-            buttonHue: settings.button_hue,
-            buttonSaturation: settings.button_saturation,
-            buttonLightness: settings.button_lightness
+            buttonHue: settings.ios_unsupported_button_hue ?? settings.button_hue,
+            buttonSaturation: settings.ios_unsupported_button_saturation ?? settings.button_saturation,
+            buttonLightness: settings.ios_unsupported_button_lightness ?? settings.button_lightness
           }}
         />
       );
@@ -431,9 +452,9 @@ export default function SubscribePage() {
             title: settings.ios_safari_title,
             subtitle: settings.ios_safari_subtitle,
             buttonText: settings.ios_safari_button_text,
-            buttonHue: settings.button_hue,
-            buttonSaturation: settings.button_saturation,
-            buttonLightness: settings.button_lightness
+            buttonHue: settings.ios_safari_button_hue ?? settings.button_hue,
+            buttonSaturation: settings.ios_safari_button_saturation ?? settings.button_saturation,
+            buttonLightness: settings.ios_safari_button_lightness ?? settings.button_lightness
           }}
         />
       );
@@ -450,9 +471,9 @@ export default function SubscribePage() {
             title: settings.ios_chrome_title,
             subtitle: settings.ios_chrome_subtitle,
             buttonText: settings.ios_chrome_button_text,
-            buttonHue: settings.button_hue,
-            buttonSaturation: settings.button_saturation,
-            buttonLightness: settings.button_lightness
+            buttonHue: settings.ios_chrome_button_hue ?? settings.button_hue,
+            buttonSaturation: settings.ios_chrome_button_saturation ?? settings.button_saturation,
+            buttonLightness: settings.ios_chrome_button_lightness ?? settings.button_lightness
           }}
         />
       );
@@ -473,9 +494,9 @@ export default function SubscribePage() {
             loadingText: settings.android_unsupported_loading_text,
             copySuccess: settings.android_unsupported_copy_success,
             copyHint: settings.android_unsupported_copy_hint,
-            buttonHue: settings.button_hue,
-            buttonSaturation: settings.button_saturation,
-            buttonLightness: settings.button_lightness
+            buttonHue: settings.android_unsupported_button_hue ?? settings.button_hue,
+            buttonSaturation: settings.android_unsupported_button_saturation ?? settings.button_saturation,
+            buttonLightness: settings.android_unsupported_button_lightness ?? settings.button_lightness
           }}
         />
       );
@@ -496,9 +517,9 @@ export default function SubscribePage() {
             loadingText: settings.android_unsupported_loading_text,
             copySuccess: settings.android_unsupported_copy_success,
             copyHint: settings.android_unsupported_copy_hint,
-            buttonHue: settings.button_hue,
-            buttonSaturation: settings.button_saturation,
-            buttonLightness: settings.button_lightness
+            buttonHue: settings.android_unsupported_button_hue ?? settings.button_hue,
+            buttonSaturation: settings.android_unsupported_button_saturation ?? settings.button_saturation,
+            buttonLightness: settings.android_unsupported_button_lightness ?? settings.button_lightness
           }}
         />
       );
@@ -519,9 +540,9 @@ export default function SubscribePage() {
             tipIcon: settings.blocked_tip_icon,
             tipIconColor: settings.blocked_tip_icon_color,
             tipText: settings.blocked_tip_text,
-            buttonHue: settings.button_hue,
-            buttonSaturation: settings.button_saturation,
-            buttonLightness: settings.button_lightness
+            buttonHue: settings.blocked_button_hue ?? settings.button_hue,
+            buttonSaturation: settings.blocked_button_saturation ?? settings.button_saturation,
+            buttonLightness: settings.blocked_button_lightness ?? settings.button_lightness
           }}
         />
       );
@@ -562,9 +583,9 @@ export default function SubscribePage() {
           subtitle: settings.subscribe_subtitle,
           buttonText: settings.subscribe_button_text,
           loadingText: settings.subscribe_loading_text,
-          buttonHue: settings.button_hue,
-          buttonSaturation: settings.button_saturation,
-          buttonLightness: settings.button_lightness
+          buttonHue: settings.subscribe_button_hue ?? settings.button_hue,
+          buttonSaturation: settings.subscribe_button_saturation ?? settings.button_saturation,
+          buttonLightness: settings.subscribe_button_lightness ?? settings.button_lightness
         }}
       />
     );
@@ -607,9 +628,6 @@ export default function SubscribePage() {
 
           {/* Footer - What you'll get */}
           <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #e5e7eb' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '16px', textAlign: 'center' }}>
-              {settings.footer_title || 'สิ่งที่คุณจะได้รับ'}
-            </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px', textAlign: 'center' }}>
               <div>
                 <div style={{ fontSize: '24px', marginBottom: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '32px' }}>
