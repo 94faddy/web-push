@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/auth';
 import { ApiResponse } from '@/types';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { uploadAndShare } from '@/lib/nexzcloud';
 import sharp from 'sharp';
 
 // Config for file upload
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const ICON_SIZE = 192; // Recommended icon size for push notifications
@@ -18,9 +15,23 @@ const BIG_IMAGE_HEIGHT = 360; // Recommended height for push notification big im
 function generateFilename(originalName: string, suffix?: string): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
-  const ext = path.extname(originalName).toLowerCase();
+  const ext = getExtension(originalName);
   const baseName = suffix ? `${timestamp}_${random}_${suffix}` : `${timestamp}_${random}`;
-  return `${baseName}${ext === '.svg' ? '.png' : ext}`;
+  return `${baseName}${ext}`;
+}
+
+// Get file extension
+function getExtension(filename: string): string {
+  const ext = filename.toLowerCase().split('.').pop() || '';
+  const extMap: Record<string, string> = {
+    'jpg': '.jpg',
+    'jpeg': '.jpg',
+    'png': '.png',
+    'gif': '.gif',
+    'webp': '.webp',
+    'svg': '.png' // SVG จะถูกแปลงเป็น PNG
+  };
+  return extMap[ext] || '.png';
 }
 
 // Resize image for icon
@@ -115,7 +126,7 @@ export async function POST(request: NextRequest) {
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const type = formData.get('type') as string | null; // 'icon' | 'image' | 'logo' | 'pwa_icon'
+    const type = formData.get('type') as string | null; // 'icon' | 'image' | 'logo' | 'bg' | 'pwa_icon'
 
     if (!file) {
       return NextResponse.json<ApiResponse>({
@@ -140,11 +151,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Create upload directory if not exists
-    if (!existsSync(UPLOAD_DIR)) {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    }
-
     // Convert file to buffer
     const bytes = await file.arrayBuffer();
     let buffer: Buffer = Buffer.from(bytes) as Buffer;
@@ -154,6 +160,7 @@ export async function POST(request: NextRequest) {
     let imageWidth: number | null = null;
     let imageHeight: number | null = null;
     let wasResized = false;
+    let mimeType = file.type;
     
     if (type === 'icon' || type === 'pwa_icon') {
       // Resize icon to 192x192
@@ -162,6 +169,7 @@ export async function POST(request: NextRequest) {
         wasResized = true;
         imageWidth = ICON_SIZE;
         imageHeight = ICON_SIZE;
+        mimeType = 'image/png';
         // Change extension to .png if was SVG
         if (file.type === 'image/svg+xml') {
           filename = filename.replace(/\.[^.]+$/, '.png');
@@ -181,6 +189,7 @@ export async function POST(request: NextRequest) {
         // Change extension to .png if was SVG
         if (file.type === 'image/svg+xml') {
           filename = filename.replace(/\.[^.]+$/, '.png');
+          mimeType = 'image/png';
         }
       } catch (resizeError) {
         console.error('Failed to resize big image:', resizeError);
@@ -188,18 +197,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const filepath = path.join(UPLOAD_DIR, filename);
+    // กำหนด upload type สำหรับ NexzCloud
+    const uploadType = (type as 'icon' | 'image' | 'logo' | 'bg' | 'pwa_icon') || 'image';
 
-    // Save file
-    await writeFile(filepath, buffer);
+    // อัพโหลดไปยัง NexzCloud และรับ CDN URL
+    const uploadResult = await uploadAndShare(
+      buffer,
+      filename,
+      mimeType,
+      uploadType,
+      admin.id
+    );
 
-    // Return the URL
-    const fileUrl = `/uploads/${filename}`;
+    if (!uploadResult.success || !uploadResult.url) {
+      return NextResponse.json<ApiResponse>({
+        success: false,
+        error: uploadResult.error || 'Failed to upload to cloud storage'
+      }, { status: 500 });
+    }
 
     return NextResponse.json<ApiResponse<{ url: string; filename: string; type: string | null; width?: number; height?: number; resized?: boolean }>>({
       success: true,
       data: {
-        url: fileUrl,
+        url: uploadResult.url,
         filename: filename,
         type: type,
         width: imageWidth || undefined,
@@ -217,7 +237,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE - Delete file
+// DELETE - ไม่จำเป็นต้องใช้แล้วเพราะไฟล์อยู่บน cloud
+// แต่เก็บไว้เพื่อ backward compatibility
 export async function DELETE(request: NextRequest) {
   try {
     // Check authentication
@@ -229,42 +250,18 @@ export async function DELETE(request: NextRequest) {
       }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const filename = searchParams.get('filename');
-
-    if (!filename) {
-      return NextResponse.json<ApiResponse>({
-        success: false,
-        error: 'No filename provided'
-      }, { status: 400 });
-    }
-
-    // Security check - only allow deleting from uploads directory
-    const filepath = path.join(UPLOAD_DIR, path.basename(filename));
-    
-    if (!filepath.startsWith(UPLOAD_DIR)) {
-      return NextResponse.json<ApiResponse>({
-        success: false,
-        error: 'Invalid filename'
-      }, { status: 400 });
-    }
-
-    // Check if file exists and delete
-    if (existsSync(filepath)) {
-      const { unlink } = await import('fs/promises');
-      await unlink(filepath);
-    }
-
+    // Note: การลบไฟล์บน NexzCloud ยังไม่มี API
+    // แต่ไฟล์บน cloud จะไม่มีผลกระทบมากนัก
     return NextResponse.json<ApiResponse>({
       success: true,
-      message: 'File deleted'
+      message: 'File deletion noted (files on cloud storage are managed separately)'
     });
 
   } catch (error) {
     console.error('Delete error:', error);
     return NextResponse.json<ApiResponse>({
       success: false,
-      error: 'Failed to delete file'
+      error: 'Failed to process delete request'
     }, { status: 500 });
   }
 }

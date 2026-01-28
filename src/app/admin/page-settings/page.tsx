@@ -447,7 +447,7 @@ export default function PageSettingsPage() {
   const upload = async (file: File, type: 'logo' | 'bg') => {
     type === 'logo' ? setUploadingLogo(true) : setUploadingBg(true);
     try {
-      const fd = new FormData(); fd.append('file', file);
+      const fd = new FormData(); fd.append('file', file); fd.append('type', type);
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       const data = await res.json();
       if (data.success) { update(type === 'logo' ? 'logo_url' : 'bg_image_url', data.data.url); Swal.fire({ icon: 'success', title: 'อัพโหลดสำเร็จ!', timer: 1500, showConfirmButton: false }); }
@@ -509,7 +509,10 @@ export default function PageSettingsPage() {
           </>)}
           {s.bg_type === 'image' && (<div className="space-y-4" key="bg-image-section">
             <button onClick={() => bgRef.current?.click()} disabled={uploadingBg} className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 flex items-center justify-center gap-2">{uploadingBg ? SvgIcons.spinner : SvgIcons.upload}<span>{uploadingBg ? 'กำลังอัพโหลด...' : 'อัพโหลดรูปพื้นหลัง'}</span></button>
-            <input key="bg-url" type="url" value={str(s.bg_image_url)} onChange={e => update('bg_image_url', e.target.value)} placeholder="หรือวาง URL" className="w-full px-4 py-3 border border-gray-300 rounded-lg" />
+            {s.bg_image_url && (<div key="bg-preview" className="relative">
+              <img src={s.bg_image_url} alt="" className="w-full h-32 object-cover rounded-lg" />
+              <button onClick={() => update('bg_image_url', '')} className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600">{SvgIcons.trash}</button>
+            </div>)}
             {s.bg_image_url && <div key="overlay-check" className="flex items-center gap-2"><input type="checkbox" checked={bool(s.bg_image_overlay, true)} onChange={e => update('bg_image_overlay', e.target.checked)} id="overlay-check" /><label htmlFor="overlay-check" className="text-sm">เพิ่ม Overlay</label></div>}
             {bool(s.bg_image_overlay, true) && s.bg_image_url && <div key="overlay-opacity"><label className="block text-sm text-gray-600 mb-2">ความทึบ: {num(s.bg_image_overlay_opacity, 40)}%</label><input type="range" min={0} max={80} value={num(s.bg_image_overlay_opacity, 40)} onChange={e => update('bg_image_overlay_opacity', +e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg" /></div>}
           </div>)}
@@ -520,9 +523,18 @@ export default function PageSettingsPage() {
         <div className="space-y-4">
           <div key="logo-section">
             <label className="block text-sm font-medium text-gray-700 mb-2">โลโก้</label>
-            <div className="flex gap-3 mb-3"><button onClick={() => logoRef.current?.click()} disabled={uploadingLogo} className="flex-1 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 flex items-center justify-center gap-2">{uploadingLogo ? SvgIcons.spinner : SvgIcons.upload}<span>{uploadingLogo ? 'กำลังอัพโหลด...' : 'อัพโหลดโลโก้'}</span></button>{s.logo_url && <button onClick={() => update('logo_url', '')} className="px-4 py-3 bg-red-50 text-red-600 rounded-lg">{SvgIcons.trash}</button>}</div>
-            <input key="logo-url" type="url" value={str(s.logo_url)} onChange={e => update('logo_url', e.target.value)} placeholder="หรือวาง URL โลโก้" className="w-full px-4 py-3 border border-gray-300 rounded-lg" />
-            {s.logo_url && (<div key="logo-preview" className="mt-3 text-center"><img src={s.logo_url} alt="" style={{ width: num(s.logo_width, 120), margin: '0 auto' }} className="max-h-20 object-contain" /><div className="mt-2"><label className="block text-sm text-gray-600 mb-1">ขนาด: {num(s.logo_width, 120)}px</label><input type="range" min={60} max={300} value={num(s.logo_width, 120)} onChange={e => update('logo_width', +e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg" /></div></div>)}
+            {s.logo_url ? (
+              <div key="logo-preview" className="mb-3">
+                <div className="relative inline-block">
+                  <img src={s.logo_url} alt="" style={{ width: num(s.logo_width, 120) }} className="max-h-20 object-contain rounded-lg border border-gray-200" />
+                  <button onClick={() => update('logo_url', '')} className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600">{SvgIcons.trash}</button>
+                </div>
+                <div className="mt-3"><label className="block text-sm text-gray-600 mb-1">ขนาด: {num(s.logo_width, 120)}px</label><input type="range" min={60} max={300} value={num(s.logo_width, 120)} onChange={e => update('logo_width', +e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg" /></div>
+              </div>
+            ) : (
+              <button onClick={() => logoRef.current?.click()} disabled={uploadingLogo} className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 flex items-center justify-center gap-2">{uploadingLogo ? SvgIcons.spinner : SvgIcons.upload}<span>{uploadingLogo ? 'กำลังอัพโหลด...' : 'อัพโหลดโลโก้'}</span></button>
+            )}
+            {s.logo_url && <button onClick={() => logoRef.current?.click()} disabled={uploadingLogo} className="w-full mt-2 px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2">{uploadingLogo ? SvgIcons.spinner : SvgIcons.upload}<span>{uploadingLogo ? 'กำลังอัพโหลด...' : 'เปลี่ยนโลโก้'}</span></button>}
           </div>
           <TextInput key="page-title" label="หัวข้อหน้าเว็บ" value={str(s.page_title)} onChange={v => update('page_title', v)} />
           <TextInput key="page-subtitle" label="คำอธิบาย" value={str(s.page_subtitle)} onChange={v => update('page_subtitle', v)} />
