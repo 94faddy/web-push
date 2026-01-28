@@ -240,7 +240,7 @@ export async function uploadFile(
       'Content-Type': `multipart/form-data; boundary=${boundary}`,
       'Content-Length': body.length.toString()
     },
-    body: body
+    body: new Uint8Array(body)
   });
 
   return response.json();
