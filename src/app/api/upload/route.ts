@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
         wasResized = result.width === BIG_IMAGE_WIDTH && result.height === BIG_IMAGE_HEIGHT;
         // Change extension to .png if was SVG
         if (file.type === 'image/svg+xml') {
-          filename = filename.replace(/\.[^.]+$/, '.png');
+          filename = filename.replace(/\.[^.]+$/, '.png');ื
           mimeType = 'image/png';
         }
       } catch (resizeError) {
